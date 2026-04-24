@@ -1,0 +1,1068 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Pulsara — Stop missing deadlines.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --lime:#d4ff3a;--lime-dim:rgba(212,255,58,.1);--lime-glow:rgba(212,255,58,.25);
+  --bg:#0a0a0a;--s1:#111;--s2:#161616;--s3:#1e1e1e;
+  --border:#242424;--border2:#2e2e2e;
+  --text:#e4e4e4;--muted:#666;--muted2:#888;
+  --exam:#ff4f4f;--asgn:#4f9fff;
+  --serif:'Instrument Serif',Georgia,serif;
+  --mono:'JetBrains Mono',monospace;
+  --sans:'Plus Jakarta Sans',system-ui,sans-serif;
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--sans)}
+#root{height:100%}
+::selection{background:var(--lime);color:#000}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+@keyframes blink-dot{0%,100%{opacity:1}50%{opacity:.2}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes cardIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes marquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@keyframes waChatIn{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:translateX(0)}}
+@keyframes waRightIn{from{opacity:0;transform:translateX(8px)}to{opacity:1;transform:translateX(0)}}
+@keyframes spotlight{0%,100%{opacity:.12}50%{opacity:.3}}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+@keyframes slideUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes popIn{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:scale(1)}}
+@keyframes reportFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const {useState,useEffect,useRef,useMemo,useCallback}=React;
+
+/* ─── CONSTANTS ──────────────────────────────────── */
+const LIME='#d4ff3a',EXAM_C='#ff4f4f',ASGN_C='#4f9fff';
+const ADMIN_PASS='admin2026';
+
+const TYPE_CFG={
+  EXAM:      {label:'EXAM', color:EXAM_C,  bg:'rgba(255,79,79,.13)'},
+  QUIZ:      {label:'QUIZ', color:LIME,    bg:'rgba(212,255,58,.13)'},
+  ASSIGNMENT:{label:'ASGN', color:ASGN_C, bg:'rgba(79,159,255,.13)'},
+  OTHER:     {label:'OTHER',color:'#aaa',  bg:'rgba(170,170,170,.1)'},
+};
+
+const SUGGESTIONS=['ghost_404','null_ptr','dark_heap','void_loop','broken_seg','silent_fork','dead_lock','lazy_byte','raw_stack','fuzzy_gate'];
+
+/* ─── SAMPLE DATA ─────────────────────────────────── */
+const INITIAL_POSTS=[
+  {id:1,type:'EXAM',      title:'Database Systems — Midterm',        course:'CS301', prof:'Dr. Ahmed Fawzy',   date:'2026-04-28',time:'10:00',notes:'Covers chapters 4–7, ER diagrams, SQL',  author:'null_ptr',   upvotes:7, status:'approved'},
+  {id:2,type:'QUIZ',      title:'Algorithms — Quick Quiz #3',        course:'CS202', prof:'Dr. Mona Samir',    date:'2026-04-25',time:'09:00',notes:'Sorting algorithms, O(n) analysis',       author:'dark_heap',  upvotes:3, status:'approved'},
+  {id:3,type:'ASSIGNMENT',title:'Networks Lab Report — TCP/IP',      course:'CS410', prof:'Dr. Khaled Nasser', date:'2026-04-30',time:'23:59',notes:'Submit PDF via portal',                 author:'ghost_404',  upvotes:5, status:'approved'},
+  {id:4,type:'EXAM',      title:'Linear Algebra — Final',            course:'MATH201',prof:'Dr. Rania Hassan', date:'2026-05-05',time:'11:00',notes:'All topics, bring calculator',           author:'void_loop',  upvotes:12,status:'approved'},
+  {id:5,type:'QUIZ',      title:'Operating Systems — Memory Quiz',   course:'CS305', prof:'Dr. Sameh Lotfy',   date:'2026-04-26',time:'14:00',notes:'Virtual memory, paging',                author:'broken_seg', upvotes:2, status:'pending'},
+  {id:6,type:'ASSIGNMENT',title:'Web Dev — React Project Submission',course:'CS490', prof:'Dr. Hana Emad',     date:'2026-04-29',time:'23:59',notes:'GitHub repo + deployed link required', author:'null_ptr',   upvotes:8, status:'approved'},
+  {id:7,type:'EXAM',      title:'Physics II — Chapter 5–8 Exam',course:'PHYS102',prof:'Dr. Amr Wahid',    date:'2026-05-02',time:'09:30',notes:'Electricity & magnetism',               author:'silent_fork',upvotes:6, status:'pending'},
+  {id:8,type:'QUIZ',      title:'Discrete Math — Logic Quiz',        course:'MATH101',prof:'Dr. Layla Farouk', date:'2026-04-27',time:'11:00',notes:'Propositional logic only',             author:'lazy_byte',  upvotes:1, status:'approved'},
+];
+
+const FINALS_SCHEDULE=[
+  {date:'Tuesday, May 19, 2026',   time:'12:00 – 14:00',subject:'Artificial Intelligence',   code:'CS212',days_left:25},
+  {date:'Saturday, May 23, 2026',  time:'12:00 – 14:00',subject:'Data Structures',           code:'CS207',days_left:29},
+  {date:'Monday, June 1, 2026',    time:'12:00 – 14:00',subject:'Linear Algebra',            code:'MATH204',days_left:38},
+  {date:'Wednesday, June 3, 2026', time:'12:00 – 14:00',subject:'Internet Technology',       code:'CS209',days_left:40},
+  {date:'Saturday, June 6, 2026',  time:'12:00 – 14:00',subject:'Advanced Computer Programming',code:'CS210',days_left:43},
+  {date:'Wednesday, June 10, 2026',time:'12:00 – 14:00',subject:'Systems Analysis and Design',code:'CS206',days_left:47},
+];
+
+const INITIAL_THREADS=[
+  {id:1,title:'Anyone have notes for chapter 6 of DB?',author:'null_ptr',created:'2h ago',replies:[
+    {id:1,author:'dark_heap',text:'Check the shared drive, someone uploaded slides last week',time:'1h ago'},
+    {id:2,author:'void_loop',text:'I have the prof’s whiteboard photos, drop your email and I’ll send',time:'45m ago'},
+    {id:3,author:'null_ptr',text:'you can DM me through the system, ghost_404 also had good notes',time:'30m ago'},
+  ],tag:'STUDY',upvotes:14},
+  {id:2,title:'Study group for Linear Algebra finals — who’s in?',author:'broken_seg',created:'5h ago',replies:[
+    {id:1,author:'silent_fork',text:'I’m in. Library room B-204 works for me, Saturday afternoon?',time:'4h ago'},
+    {id:2,author:'lazy_byte',text:'Same, I need someone to explain eigenvalues to me like I’m 5',time:'3h ago'},
+  ],tag:'GROUP',upvotes:9},
+  {id:3,title:'What exactly is covered in the AI midterm?',author:'ghost_404',created:'1d ago',replies:[
+    {id:1,author:'null_ptr',text:'Dr. Fawzy said search algorithms + constraint satisfaction, chapters 3–5',time:'23h ago'},
+    {id:2,author:'broken_seg',text:'He also mentioned Bayesian networks might show up as a bonus Q',time:'20h ago'},
+    {id:3,author:'dark_heap',text:'Confirmed: no neural networks on this midterm, he said explicitly',time:'18h ago'},
+    {id:4,author:'silent_fork',text:'Thanks! Saving me from studying 3 extra chapters lol',time:'10h ago'},
+  ],tag:'EXAM',upvotes:22},
+  {id:4,title:'Grade curve for Algorithms last semester?',author:'raw_stack',created:'2d ago',replies:[
+    {id:1,author:'void_loop',text:'No curve, Dr. Mona doesn’t curve. But avg was 68 so passing is around 55',time:'1d ago'},
+  ],tag:'GRADES',upvotes:6},
+  {id:5,title:'Is the Networks lab submission portal down for anyone else?',author:'fuzzy_gate',created:'3h ago',replies:[],tag:'ISSUE',upvotes:11},
+];
+
+const NOW=new Date(2026,3,24);
+
+/* ─── HELPERS ────────────────────────────────────── */
+function fmtDate(s){const d=new Date(s+'T00:00:00');return d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})}
+function daysUntil(s){const d=new Date(s+'T00:00:00');const diff=Math.ceil((d-NOW)/86400000);if(diff<0)return'Past';if(diff===0)return'Today';if(diff===1)return'Tomorrow';return`${diff}d left`}
+function getUser(){try{return JSON.parse(localStorage.getItem('pulsara_user_v2')||'null')}catch{return null}}
+function saveUser(u){localStorage.setItem('pulsara_user_v2',JSON.stringify(u))}
+function getPosts(){try{const p=JSON.parse(localStorage.getItem('pulsara_posts')||'null');return p||INITIAL_POSTS}catch{return INITIAL_POSTS}}
+function savePosts(p){localStorage.setItem('pulsara_posts',JSON.stringify(p))}
+function getReports(){try{return JSON.parse(localStorage.getItem('pulsara_reports')||'[]')}catch{return[]}}
+function saveReports(r){localStorage.setItem('pulsara_reports',JSON.stringify(r))}
+function getThreads(){try{const t=JSON.parse(localStorage.getItem('pulsara_threads')||'null');return t||INITIAL_THREADS}catch{return INITIAL_THREADS}}
+function saveThreads(t){localStorage.setItem('pulsara_threads',JSON.stringify(t))}
+
+/* ─── SHARED STYLES ──────────────────────────────── */
+const LBL={fontSize:11,fontWeight:600,color:'var(--muted2)',fontFamily:'var(--mono)',letterSpacing:'.06em',textTransform:'uppercase',display:'block',marginBottom:6};
+const INP={width:'100%',background:'var(--s2)',border:'1px solid var(--border)',borderRadius:8,padding:'10px 13px',color:'var(--text)',fontFamily:'var(--sans)',fontSize:13,outline:'none',transition:'border-color .2s',colorScheme:'dark'};
+const LIME_BTN={background:LIME,color:'#000',border:'none',borderRadius:8,padding:'11px 20px',fontFamily:'var(--mono)',fontSize:11,fontWeight:700,letterSpacing:'.08em',cursor:'pointer',transition:'all .15s',width:'100%'};
+const GHOST_BTN={background:'none',border:'1px solid var(--border)',borderRadius:8,padding:'10px 16px',color:'var(--muted)',fontFamily:'var(--mono)',fontSize:11,cursor:'pointer',transition:'all .15s',whiteSpace:'nowrap'};
+
+/* ─── ATOMS ──────────────────────────────────────── */
+function PulseDot(){return <span style={{display:'inline-block',width:7,height:7,borderRadius:'50%',background:LIME,animation:'blink-dot 2s ease-in-out infinite',flexShrink:0}}/>}
+function Badge({type,small}){const c=TYPE_CFG[type]||TYPE_CFG.OTHER;return<span style={{fontFamily:'var(--mono)',fontSize:small?9:10,fontWeight:700,letterSpacing:'.08em',textTransform:'uppercase',padding:small?'2px 5px':'3px 7px',borderRadius:4,color:c.color,background:c.bg,border:`1px solid ${c.color}33`,whiteSpace:'nowrap',flexShrink:0}}>{c.label}</span>}
+function Chip({label,color='var(--muted)',bg='var(--s3)'}){return<span style={{fontFamily:'var(--mono)',fontSize:9,fontWeight:700,letterSpacing:'.07em',padding:'2px 7px',borderRadius:4,color,background:bg,border:`1px solid ${color}33`}}>{label}</span>}
+
+/* ─── WHATSAPP MOCK ──────────────────────────────── */
+const WA_MSGS=[
+  {side:'left', name:'Ahmed K.',  text:'yo did anyone actually study lmaoooo 💀',time:'10:02'},
+  {side:'left', name:'Sara M.',   text:'HAHAHA bro same I opened the book for 2 mins then closed it',time:'10:03'},
+  {side:'right',name:'You',       text:'guys when is the DB exam exactly??',time:'10:04'},
+  {side:'left', name:'Mahmoud',   text:'😂😂😂😂😂',time:'10:04'},
+  {side:'left', name:'Nour',      text:'idk check the syllabus or smth',time:'10:05'},
+  {side:'left', name:'Ahmed K.',  text:'lol good luck everyone fr',time:'10:05'},
+  {side:'left', name:'Sara M.',   text:'anyone got the slides for chapter 6?? asking for a friend 🙃',time:'10:06'},
+  {side:'left', name:'Omar',      text:'💀💀💀💀',important:true,time:'10:07',realText:'CS301 DB Midterm — April 28 at 10:00am. Covers ch4–7 + ER diagrams. Dr. Fawzy confirmed.'},
+  {side:'left', name:'Mahmoud',   text:'^^^^ this ☝️',time:'10:07'},
+  {side:'left', name:'Ahmed K.',  text:'ahahaha man I’m not ready at all 😭',time:'10:08'},
+  {side:'right',name:'You',       text:'WAIT what was that message above??',time:'10:09'},
+  {side:'left', name:'Sara M.',   text:'which one lol there’s like 200 messages',time:'10:09'},
+];
+function WhatsAppMock(){
+  const [revealed,setRevealed]=useState(false);
+  return(
+    <div style={{position:'relative',width:'100%',maxWidth:340,margin:'0 auto'}}>
+      <div style={{background:'#1f1f1f',borderRadius:20,overflow:'hidden',border:'1px solid #333',boxShadow:'0 40px 80px rgba(0,0,0,.6)'}}>
+        <div style={{background:'#1a2f25',padding:'11px 14px',display:'flex',alignItems:'center',gap:9,borderBottom:'1px solid #2a3f30'}}>
+          <div style={{width:34,height:34,borderRadius:'50%',background:'#2d5a3d',display:'flex',alignItems:'center',justifyContent:'center',fontSize:12,fontWeight:700,color:'#5ddb8a',fontFamily:'var(--mono)'}}>CS</div>
+          <div style={{flex:1}}><div style={{fontSize:12,fontWeight:600,color:'#e9e9e9'}}>CS Faculty 2026 🎓</div><div style={{fontSize:10,color:'#6db87e'}}>342 members</div></div>
+          <div style={{color:'#6db87e',fontSize:13}}>&#8942;</div>
+        </div>
+        <div style={{background:'#0d1f18',backgroundImage:'radial-gradient(circle at 1px 1px,#1a2f1e 1px,transparent 0)',backgroundSize:'24px 24px',height:340,overflowY:'auto',padding:'10px',display:'flex',flexDirection:'column',gap:3}}>
+          {WA_MSGS.map((msg,i)=>{
+            const right=msg.side==='right';
+            if(msg.important)return(
+              <div key={i} style={{display:'flex',justifyContent:'flex-start',animation:`waChatIn .3s ease ${i*50}ms both`}}>
+                <div onClick={()=>setRevealed(r=>!r)} style={{maxWidth:'78%',background:revealed?'#0d2d1a':'#1a2a1a',borderRadius:'2px 12px 12px 12px',padding:'8px 10px',border:`1.5px solid ${revealed?LIME:'rgba(212,255,58,.25)'}`,cursor:'pointer',boxShadow:revealed?`0 0 16px rgba(212,255,58,.2)`:'none',transition:'all .3s'}}>
+                  <div style={{fontSize:10,fontWeight:700,color:'#5ddb8a',marginBottom:3}}>Omar</div>
+                  {revealed?<div><div style={{fontFamily:'var(--mono)',fontSize:10,color:LIME,fontWeight:700,marginBottom:4}}>📌 EXAM ALERT</div><div style={{fontSize:12,color:'#d4e8d4',lineHeight:1.5}}>{msg.realText}</div></div>
+                  :<div><div style={{fontSize:12,color:'#c8e6c9',marginBottom:4}}>{msg.text}</div><div style={{fontFamily:'var(--mono)',fontSize:9,padding:'2px 6px',borderRadius:3,background:'rgba(212,255,58,.08)',color:LIME,border:'1px solid rgba(212,255,58,.2)',display:'inline-block',animation:'spotlight 2.5s ease-in-out infinite'}}>⚠ important info — tap to reveal</div></div>}
+                  <div style={{fontSize:9,color:'#4a7a4e',textAlign:'right',marginTop:3}}>{msg.time}</div>
+                </div>
+              </div>
+            );
+            return(
+              <div key={i} style={{display:'flex',justifyContent:right?'flex-end':'flex-start',animation:`${right?'waRightIn':'waChatIn'} .25s ease ${i*45}ms both`}}>
+                <div style={{maxWidth:'75%',background:right?'#005c4b':'#1f2e23',borderRadius:right?'12px 2px 12px 12px':'2px 12px 12px 12px',padding:'7px 10px'}}>
+                  {!right&&<div style={{fontSize:10,fontWeight:700,color:'#5ddb8a',marginBottom:2}}>{msg.name}</div>}
+                  <div style={{fontSize:12,color:right?'#d9fdd3':'#c8e6c9',lineHeight:1.45}}>{msg.text}</div>
+                  <div style={{fontSize:9,color:right?'#53b39c':'#4a7a4e',textAlign:'right',marginTop:3}}>{msg.time}{right&&' ✓✓'}</div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        <div style={{background:'#1f2e23',padding:'8px 12px',display:'flex',alignItems:'center',gap:7,borderTop:'1px solid #2a3f2e'}}>
+          <div style={{flex:1,background:'#2d3d30',borderRadius:20,padding:'7px 13px',fontSize:11,color:'#6a8a6e'}}>Message…</div>
+          <div style={{width:32,height:32,borderRadius:'50%',background:'#00a884',display:'flex',alignItems:'center',justifyContent:'center',fontSize:13}}>🎤</div>
+        </div>
+      </div>
+      <div style={{position:'absolute',top:'48%',right:-100,transform:'translateY(-50%)',width:92}}>
+        <div style={{fontFamily:'var(--mono)',fontSize:9,color:LIME,letterSpacing:'.05em',lineHeight:1.6}}>exam info buried under 200+ messages</div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── SIGNUP MODAL ───────────────────────────────── */
+function SignupModal({onComplete}){
+  const [step,setStep]=useState(1);
+  const [email,setEmail]=useState('');
+  const [usernameInput,setUsernameInput]=useState('');
+  const [error,setError]=useState('');
+  const [shake,setShake]=useState(false);
+  const suggested=useMemo(()=>[...SUGGESTIONS].sort(()=>Math.random()-.5).slice(0,5),[]);
+  function doShake(){setShake(true);setTimeout(()=>setShake(false),400)}
+  function step1(e){e.preventDefault();if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){setError('Enter a valid email.');doShake();return}setError('');setStep(2)}
+  function step2(e){
+    e.preventDefault();const u=usernameInput.trim().toLowerCase();
+    if(!/^[a-z0-9_]{3,20}$/.test(u)){setError('3–20 chars, lowercase letters, numbers, underscores only.');doShake();return}
+    const user={email,username:u,joinedAt:Date.now()};saveUser(user);onComplete(user);
+  }
+  return(
+    <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,.88)',zIndex:200,display:'flex',alignItems:'center',justifyContent:'center',backdropFilter:'blur(8px)',animation:'fadeIn .2s ease'}}>
+      <div style={{background:'var(--s1)',border:'1px solid var(--border)',borderRadius:16,padding:'34px 30px',width:'100%',maxWidth:400,animation:'popIn .3s ease',position:'relative'}}>
+        <div style={{display:'flex',alignItems:'center',gap:7,marginBottom:26}}><span style={{fontFamily:'var(--serif)',fontSize:19}}>Pulsara</span><PulseDot/></div>
+        <div style={{display:'flex',gap:5,marginBottom:22}}>
+          {[1,2].map(n=><div key={n} style={{height:2,flex:1,borderRadius:2,background:step>=n?LIME:'var(--border)',transition:'background .3s'}}/>)}
+        </div>
+        {step===1&&(
+          <div style={{animation:'fadeUp .25s ease'}}>
+            <h2 style={{fontFamily:'var(--serif)',fontSize:24,fontWeight:400,marginBottom:5}}>Join the waitlist</h2>
+            <p style={{fontSize:13,color:'var(--muted)',marginBottom:22,lineHeight:1.6}}>Enter your university email to get access when Pulsara opens for your faculty.</p>
+            <form onSubmit={step1} style={{display:'flex',flexDirection:'column',gap:13}}>
+              <div><label style={LBL}>University email</label>
+                <input type="email" value={email} onChange={e=>{setEmail(e.target.value);setError('')}} placeholder="yourname@hnu.edu.eg" autoFocus style={{...INP,animation:shake?'shake .35s ease':''}} onFocus={e=>e.target.style.borderColor=LIME} onBlur={e=>e.target.style.borderColor='var(--border)'}/>
+                {error&&<div style={{fontFamily:'var(--mono)',fontSize:10,color:EXAM_C,marginTop:5}}>{error}</div>}
+              </div>
+              <button type="submit" style={LIME_BTN}>CONTINUE →</button>
+            </form>
+          </div>
+        )}
+        {step===2&&(
+          <div style={{animation:'fadeUp .25s ease'}}>
+            <h2 style={{fontFamily:'var(--serif)',fontSize:24,fontWeight:400,marginBottom:5}}>Choose your identity</h2>
+            <p style={{fontSize:13,color:'var(--muted)',marginBottom:18,lineHeight:1.6}}>You’ll post anonymously under this codename. No one will know your real name.</p>
+            <div style={{background:'var(--s2)',border:'1px solid var(--border)',borderRadius:10,padding:'12px 14px',display:'flex',alignItems:'center',gap:10,marginBottom:18}}>
+              <span style={{fontSize:16}}>&#x1F47B;</span>
+              <div><div style={{fontFamily:'var(--mono)',fontSize:9,color:'var(--muted)',letterSpacing:'.07em',marginBottom:2}}>YOUR IDENTITY</div>
+              <div style={{fontFamily:'var(--mono)',fontSize:14,color:usernameInput?LIME:'var(--border2)',fontWeight:700,transition:'color .2s'}}>@{usernameInput||'_'}</div></div>
+            </div>
+            <div style={{marginBottom:14}}>
+              <div style={{fontFamily:'var(--mono)',fontSize:9,color:'var(--muted)',letterSpacing:'.07em',marginBottom:7}}>QUICK PICKS</div>
+              <div style={{display:'flex',flexWrap:'wrap',gap:5}}>
+                {suggested.map(s=><button key={s} onClick={()=>{setUsernameInput(s);setError('')}} style={{fontFamily:'var(--mono)',fontSize:10,padding:'4px 9px',borderRadius:6,cursor:'pointer',background:usernameInput===s?'rgba(212,255,58,.12)':'var(--s2)',border:`1px solid ${usernameInput===s?LIME+'55':'var(--border)'}`,color:usernameInput===s?LIME:'var(--muted2)',transition:'all .15s'}}>@{s}</button>)}
+              </div>
+            </div>
+            <form onSubmit={step2} style={{display:'flex',flexDirection:'column',gap:13}}>
+              <div><label style={LBL}>Or type your own</label>
+                <div style={{position:'relative'}}>
+                  <span style={{position:'absolute',left:12,top:'50%',transform:'translateY(-50%)',fontFamily:'var(--mono)',fontSize:12,color:'var(--muted)',pointerEvents:'none'}}>@</span>
+                  <input value={usernameInput} onChange={e=>{setUsernameInput(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g,''));setError('')}} placeholder="your_codename" maxLength={20} style={{...INP,paddingLeft:26,animation:shake?'shake .35s ease':''}} onFocus={e=>e.target.style.borderColor=LIME} onBlur={e=>e.target.style.borderColor='var(--border)'}/>
+                </div>
+                <div style={{fontFamily:'var(--mono)',fontSize:9,color:'var(--muted)',marginTop:4}}>lowercase · numbers · underscores · 3–20 chars</div>
+                {error&&<div style={{fontFamily:'var(--mono)',fontSize:10,color:EXAM_C,marginTop:4}}>{error}</div>}
+              </div>
+              <div style={{display:'flex',gap:7}}>
+                <button type="button" onClick={()=>setStep(1)} style={{...GHOST_BTN,padding:'10px 14px'}}>← Back</button>
+                <button type="submit" style={{...LIME_BTN,flex:1}}>ENTER PULSARA →</button>
+              </div>
+            </form>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ─── POST CARD ──────────────────────────────────── */
+function PostCard({post,myVotes,onVote,myUser,delay=0,compact=false}){
+  const voted=myVotes.includes(post.id);
+  const verified=post.upvotes>=5;
+  const isMine=post.author===myUser;
+  const cfg=TYPE_CFG[post.type]||TYPE_CFG.OTHER;
+  const days=daysUntil(post.date);
+  const urgent=['Today','Tomorrow'].includes(days);
+  return(
+    <div style={{background:isMine?'#13140e':'var(--s1)',border:`1px solid ${verified?cfg.color+'33':'var(--border)'}`,borderLeft:`3px solid ${verified?cfg.color:'transparent'}`,borderRadius:10,padding:compact?'12px 14px':'15px 17px',opacity:verified?1:.88,animation:`cardIn .35s ease ${delay}ms both`,transition:'border-color .2s,transform .15s,box-shadow .15s',position:'relative'}}
+      onMouseEnter={e=>{e.currentTarget.style.transform='translateY(-1px)';e.currentTarget.style.boxShadow='0 4px 20px rgba(0,0,0,.5)'}}
+      onMouseLeave={e=>{e.currentTarget.style.transform='';e.currentTarget.style.boxShadow=''}}>
+      {isMine&&<span style={{position:'absolute',top:10,right:12,fontFamily:'var(--mono)',fontSize:9,color:LIME,opacity:.7,letterSpacing:'.06em'}}>YOUR POST</span>}
+      <div style={{display:'flex',alignItems:'center',gap:7,marginBottom:8}}>
+        <Badge type={post.type}/>
+        {urgent&&<Chip label={days.toUpperCase()} color={EXAM_C} bg="rgba(255,79,79,.12)"/>}
+        <div style={{flex:1}}/>
+        <span style={{fontFamily:'var(--mono)',fontSize:10,color:verified?LIME:'var(--muted)'}}>{verified?'✓ Verified':`○ ${5-post.upvotes} more`}</span>
+      </div>
+      <div style={{fontSize:compact?13:15,fontWeight:600,lineHeight:1.3,marginBottom:3}}>{post.title}</div>
+      <div style={{fontFamily:'var(--mono)',fontSize:10,color:'var(--muted2)',marginBottom:post.notes?9:11,display:'flex',gap:10,flexWrap:'wrap'}}><span>{post.course}</span>{post.prof&&<span>{post.prof}</span>}</div>
+      {post.notes&&!compact&&<div style={{fontSize:12,color:'var(--muted)',marginBottom:11,fontStyle:'italic',lineHeight:1.4,borderLeft:'2px solid var(--border2)',paddingLeft:8}}>{post.notes}</div>}
+      <div style={{display:'flex',alignItems:'center',gap:10,flexWrap:'wrap'}}>
+        <span style={{fontSize:11,fontWeight:600,color:urgent?EXAM_C:'var(--muted2)'}}>{fmtDate(post.date)}</span>
+        <span style={{color:'var(--border2)'}}>·</span>
+        <span style={{fontFamily:'var(--mono)',fontSize:10,color:'var(--muted)'}}>{post.time}</span>
+        <div style={{flex:1}}/>
+        <span style={{fontFamily:'var(--mono)',fontSize:10,color:'var(--muted)'}}>@{post.author}</span>
+        <button onClick={()=>onVote(post.id)} style={{background:voted?'rgba(212,255,58,.12)':'var(--s3)',border:`1px solid ${voted?LIME+'55':'var(--border2)'}`,borderRadius:6,padding:'4px 9px',cursor:'pointer',color:voted?LIME:'var(--muted2)',fontFamily:'var(--mono)',fontSize:11,fontWeight:600,display:'flex',alignItems:'center',gap:4,transition:'all .15s'}}>
+          <span>{voted?'✓':'↑'}</span>{post.upvotes}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ─── FEED VIEW ──────────────────────────────────── */
+function FeedView({posts,setPosts,myUser}){
+  const [filter,setFilter]=useState('ALL');
+  const [myVotes,setMyVotes]=useState(()=>{try{return JSON.parse(localStorage.getItem('pulsara_votes')||'[]')}catch{return[]}});
+  const approved=posts.filter(p=>p.status!=='deleted');
+  const filtered=filter==='ALL'?approved:approved.filter(p=>p.type===filter);
+  function handleVote(id){
+    const was=myVotes.includes(id);const next=was?myVotes.filter(v=>v!==id):[...myVotes,id];
+    setMyVotes(next);localStorage.setItem('pulsara_votes',JSON.stringify(next));
+    const updated=posts.map(p=>p.id===id?{...p,upvotes:was?p.upvotes-1:p.upvotes+1}:p);
+    setPosts(updated);savePosts(updated);
+  }
+  return(
+    <div style={{flex:1,display:'flex',flexDirection:'column',minHeight:0}}>
+      <div style={{padding:'18px 22px 0',borderBottom:'1px solid var(--border)',background:'var(--s1)'}}>
+        <div style={{marginBottom:13}}><h1 style={{fontFamily:'var(--serif)',fontSize:26,fontWeight:400,letterSpacing:'-.01em',marginBottom:2}}>Feed</h1><p style={{fontSize:11,color:'var(--muted)',fontFamily:'var(--mono)'}}>HNU · CS Faculty · {filtered.length} events</p></div>
+        <div style={{display:'flex',gap:3}}>
+          {['ALL','EXAM','QUIZ','ASSIGNMENT'].map(f=>{const active=filter===f;const cfg=f!=='ALL'?TYPE_CFG[f]:null;return<button key={f} onClick={()=>setFilter(f)} style={{padding:'7px 13px',borderRadius:'6px 6px 0 0',background:active?'var(--bg)':'none',border:`1px solid ${active?'var(--border)':'transparent'}`,borderBottom:active?'1px solid var(--bg)':'1px solid transparent',color:active?(cfg?cfg.color:LIME):'var(--muted)',fontFamily:'var(--mono)',fontSize:10,fontWeight:600,letterSpacing:'.07em',cursor:'pointer',transition:'all .15s',marginBottom:'-1px'}}>{f}</button>;})}
+        </div>
+      </div>
+      <div style={{flex:1,overflowY:'auto',padding:'16px 22px',display:'flex',flexDirection:'column',gap:8}}>
+        {filtered.map((p,i)=><PostCard key={p.id} post={p} myVotes={myVotes} onVote={handleVote} myUser={myUser} delay={i*35}/>)}
+        {filtered.length===0&&<div style={{color:'var(--muted)',fontFamily:'var(--mono)',fontSize:12,textAlign:'center',paddingTop:40}}>No events for this filter.</div>}
+      </div>
+    </div>
+  );
+}
+
+/* ─── CALENDAR VIEW ──────────────────────────────── */
+function CalendarView({posts}){
+  const [viewDate,setViewDate]=useState(new Date(2026,3,1));
+  const [sel,setSel]=useState(null);
+  const yr=viewDate.getFullYear();const mo=viewDate.getMonth();
+  const monthName=viewDate.toLocaleString('en-US',{month:'long'});
+  const firstDay=new Date(yr,mo,1).getDay();
+  const daysInMonth=new Date(yr,mo+1,0).getDate();
+  const today=new Date(2026,3,24);
+  const evsByDay={};
+  posts.filter(p=>p.status!=='deleted').forEach(p=>{const d=new Date(p.date+'T00:00:00');if(d.getFullYear()===yr&&d.getMonth()===mo){const day=d.getDate();if(!evsByDay[day])evsByDay[day]=[];evsByDay[day].push(p);}});
+  const cells=[];for(let i=0;i<firstDay;i++)cells.push(null);for(let d=1;d<=daysInMonth;d++)cells.push(d);
+  const selEvs=sel?(evsByDay[sel]||[]):[];
+  return(
+    <div style={{flex:1,display:'flex',overflow:'hidden'}}>
+      <div style={{flex:1,overflowY:'auto',padding:'22px'}}>
+        <div style={{display:'flex',alignItems:'baseline',gap:14,marginBottom:22}}>
+          <h1 style={{fontFamily:'var(--serif)',fontSize:32,fontWeight:400,letterSpacing:'-.02em'}}>{monthName} <span style={{color:'var(--muted)'}}>{yr}</span></h1>
+          <div style={{display:'flex',gap:5,marginLeft:'auto'}}>
+            {['←','→'].map((a,i)=><button key={a} onClick={()=>setViewDate(new Date(yr,mo+(i?1:-1),1))} style={{background:'var(--s2)',border:'1px solid var(--border)',borderRadius:6,width:30,height:30,color:'var(--muted2)',cursor:'pointer',fontFamily:'var(--mono)',fontSize:13,transition:'all .15s'}}>{a}</button>)}
+          </div>
+        </div>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:2,marginBottom:3}}>
+          {['SUN','MON','TUE','WED','THU','FRI','SAT'].map(d=><div key={d} style={{textAlign:'center',fontFamily:'var(--mono)',fontSize:9,color:'var(--muted)',letterSpacing:'.1em',padding:'3px 0'}}>{d}</div>)}
+        </div>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:2}}>
+          {cells.map((day,i)=>{
+            if(!day)return<div key={`e${i}`}/>;
+            const isToday=day===today.getDate()&&mo===today.getMonth()&&yr===today.getFullYear();
+            const evs=evsByDay[day]||[];const isSel=sel===day;const show=evs.slice(0,2);const extra=evs.length-2;
+            return<div key={day} onClick={()=>setSel(isSel?null:day)} style={{minHeight:78,background:isSel?'var(--s3)':'var(--s1)',border:`1px solid ${isSel?LIME+'44':'var(--border)'}`,borderRadius:8,padding:'7px 6px 5px',cursor:'pointer',transition:'all .15s'}} onMouseEnter={e=>{if(!isSel)e.currentTarget.style.background='var(--s2)'}} onMouseLeave={e=>{if(!isSel)e.currentTarget.style.background='var(--s1)'}}>
+              <div style={{width:22,height:22,borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'var(--mono)',fontSize:11,fontWeight:isToday?700:400,color:isToday?'#000':evs.length?'var(--text)':'var(--muted)',background:isToday?LIME:'transparent',boxShadow:isToday?`0 0 0 2px ${LIME},0 0 10px ${LIME}66`:'none',marginBottom:3}}>{day}</div>
+              {show.map((ev,si)=>{const c=TYPE_CFG[ev.type]||TYPE_CFG.OTHER;return<div key={ev.id} style={{fontFamily:'var(--mono)',fontSize:8,fontWeight:700,letterSpacing:'.06em',padding:'2px 4px',borderRadius:3,marginBottom:2,background:c.bg,color:c.color,border:`1px solid ${c.color}44`,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',transform:`rotate(${si%2===0?'-1deg':'1deg'})`}}>{c.label}</div>;})}
+              {extra>0&&<div style={{fontFamily:'var(--mono)',fontSize:8,color:'var(--muted)'}}>+{extra}</div>}
+            </div>;
+          })}
+        </div>
+        <div style={{display:'flex',gap:14,marginTop:16,flexWrap:'wrap'}}>
+          {Object.entries(TYPE_CFG).filter(([k])=>k!=='OTHER').map(([k,c])=><div key={k} style={{display:'flex',alignItems:'center',gap:5}}><div style={{width:8,height:8,borderRadius:2,background:c.color}}/><span style={{fontFamily:'var(--mono)',fontSize:9,color:'var(--muted)',letterSpacing:'.07em'}}>{c.label}</span></div>)}
+        </div>
+      </div>
+      {sel&&(
+        <div style={{width:280,borderLeft:'1px solid var(--border)',background:'var(--s1)',padding:'18px',overflowY:'auto',animation:'fadeIn .2s ease',flexShrink:0}}>
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:13}}>
+            <div><div style={{fontFamily:'var(--serif)',fontSize:18,fontWeight:400}}>{monthName} {sel}</div><div style={{fontFamily:'var(--mono)',fontSize:10,color:'var(--muted)',marginTop:1}}>{selEvs.length} event{selEvs.length!==1?'s':''}</div></div>
+            <button onClick={()=>setSel(null)} style={{background:'none',border:'1px solid var(--border)',borderRadius:6,width:26,height:26,color:'var(--muted)',cursor:'pointer',fontSize:12}}>&#x2715;</button>
+          </div>
+          <div style={{display:'flex',flexDirection:'column',gap:8}}>
+            {selEvs.length===0&&<div style={{color:'var(--muted)',fontSize:12,fontFamily:'var(--mono)'}}>No events.</div>}
+            {selEvs.map(ev=>{const c=TYPE_CFG[ev.type]||TYPE_CFG.OTHER;return<div key={ev.id} style={{background:'var(--s2)',borderRadius:8,padding:'11px',border:`1px solid ${c.color}22`,borderLeft:`3px solid ${c.color}`}}>
+              <div style={{display:'flex',gap:5,marginBottom:5}}><Badge type={ev.type} small/></div>
+              <div style={{fontSize:12,fontWeight:600,marginBottom:3,lineHeight:1.3}}>{ev.title}</div>
+              <div style={{fontFamily:'var(--mono)',fontSize:10,color:'var(--muted2)',marginBottom:3}}>{ev.course} · {ev.time}</div>
+              {ev.notes&&<div style={{fontSize:11,color:'var(--muted)',fontStyle:'italic',lineHeight:1.4}}>{ev.notes}</div>}
+              <div style={{marginTop:7,fontFamily:'var(--mono)',fontSize:9,color:ev.upvotes>=5?LIME:'var(--muted)'}}>{ev.upvotes>=5?'✓ Verified':`○ ${5-ev.upvotes} more`}</div>
+            </div>;})}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─── FINALS SCHEDULE ────────────────────────────── */
+function FinalsView(){
+  const today=new Date(2026,3,24);
+  return(
+    <div style={{flex:1,overflowY:'auto',padding:'28px 28px',animation:'fadeUp .3s ease'}}>
+      {/* Header */}
+      <div style={{background:'var(--s1)',border:'1px solid var(--border)',borderRadius:14,padding:'24px 28px',marginBottom:24,position:'relative',overflow:'hidden'}}>
+        <div style={{position:'absolute',top:0,left:0,right:0,height:3,background:`linear-gradient(90deg,${LIME},${LIME}00)`}}/>
+        <div style={{fontFamily:'var(--mono)',fontSize:9,color:LIME,letterSpacing:'.12em',marginBottom:8}}>OFFICIAL SCHEDULE</div>
+        <div style={{fontFamily:'var(--serif)',fontSize:13,color:'var(--muted2)',marginBottom:4,letterSpacing:'.02em'}}>A FEDENIAL · HNU</div>
+        <h1 style={{fontFamily:'var(--serif)',fontSize:28,fontWeight:400,lineHeight:1.15,marginBottom:6}}>Faculty of Computer Science<br/><span style={{color:'var(--muted2)',fontSize:20}}>and Information Technology</span></h1>
+        <p style={{fontFamily:'var(--mono)',fontSize:11,color:'var(--muted)',marginBottom:18}}>End of Second Semester Examination Schedule · Academic Year 2025–2026</p>
+        <div style={{display:'flex',gap:20,flexWrap:'wrap'}}>
+          <div style={{fontFamily:'var(--mono)',fontSize:11,color:'var(--muted2)'}}><span style={{color:LIME,fontWeight:700}}>6</span> exams scheduled</div>
+          <div style={{fontFamily:'var(--mono)',fontSize:11,color:'var(--muted2)'}}><span style={{color:LIME,fontWeight:700}}>All</span> 12:00 – 14:00</div>
+          <div style={{fontFamily:'var(--mono)',fontSize:11,color:'var(--muted2)'}}>May 19 – June 10, 2026</div>
+        </div>
+      </div>
+
+      {/* Table */}
+      <div style={{display:'flex',flexDirection:'column',gap:8}}>
+        {FINALS_SCHEDULE.map((exam,i)=>{
+          const examDate=new Date(exam.date);
+          const diffMs=examDate-today;
+          const diffDays=Math.ceil(diffMs/86400000);
+          const isPast=diffDays<0;
+          const isSoon=diffDays>=0&&diffDays<=7;
+          const urgColor=isPast?'var(--muted)':isSoon?EXAM_C:LIME;
+          const dLabel=isPast?'Past':diffDays===0?'Today':`${diffDays}d`;
+          return(
+            <div key={i} style={{background:'var(--s1)',border:'1px solid var(--border)',borderLeft:`3px solid ${isPast?'var(--border)':EXAM_C}`,borderRadius:10,padding:'16px 20px',display:'flex',alignItems:'center',gap:20,flexWrap:'wrap',animation:`cardIn .3s ease ${i*60}ms both`,transition:'background .15s'}}
+              onMouseEnter={e=>e.currentTarget.style.background='var(--s2)'}
+              onMouseLeave={e=>e.currentTarget.style.background='var(--s1)'}
+            >
+              {/* Countdown pill */}
+              <div style={{fontFamily:'var(--mono)',fontSize:12,fontWeight:700,color:urgColor,background:`${urgColor}15`,border:`1px solid ${urgColor}33`,borderRadius:6,padding:'4px 10px',minWidth:52,textAlign:'center',flexShrink:0}}>{dLabel}</div>
+
+              {/* Date + time */}
+              <div style={{minWidth:180,flexShrink:0}}>
+                <div style={{fontSize:13,fontWeight:600,color:isPast?'var(--muted)':'var(--text)',marginBottom:2}}>{exam.date}</div>
+                <div style={{fontFamily:'var(--mono)',fontSize:10,color:'var(--muted)'}}>{exam.time}</div>
+              </div>
+
+              {/* Subject */}
+              <div style={{flex:1}}>
+                <div style={{fontSize:15,fontWeight:600,color:isPast?'var(--muted)':'var(--text)',marginBottom:3}}>{exam.subject}</div>
+                <div style={{fontFamily:'var(--mono)',fontSize:10,color:'var(--muted2)',letterSpacing:'.05em'}}>{exam.code}</div>
+              </div>
+
+              {/* Exam badge */}
+              <Badge type="EXAM"/>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Footer note */}
+      <div style={{marginTop:24,padding:'14px 18px',background:'var(--s1)',border:'1px solid var(--border)',borderRadius:10,display:'flex',gap:12,alignItems:'flex-start'}}>
+        <span style={{fontSize:16,flexShrink:0}}>&#x1F4CB;</span>
+        <div>
+          <div style={{fontSize:12,fontWeight:600,marginBottom:3}}>Program Coordinators</div>
+          <div style={{fontSize:12,color:'var(--muted)',lineHeight:1.6}}>Supervisor of the Faculty of Computer Science and Information Technology<br/><span style={{color:'var(--muted2)',fontWeight:500}}>Prof. Dr. Osama Imam</span></div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── FORUMS VIEW ────────────────────────────────── */
+const FORUM_TAGS=['STUDY','GROUP','EXAM','GRADES','ISSUE','GENERAL'];
+const TAG_COLORS={STUDY:LIME,GROUP:ASGN_C,EXAM:EXAM_C,GRADES:'#f0a500',ISSUE:'#ff6b6b',GENERAL:'var(--muted2)'};
+
+function ForumsView({myUser}){
+  const [threads,setThreads]=useState(()=>getThreads());
+  const [activeThread,setActiveThread]=useState(null);
+  const [showNew,setShowNew]=useState(false);
+  const [newTitle,setNewTitle]=useState('');
+  const [newTag,setNewTag]=useState('GENERAL');
+  const [newBody,setNewBody]=useState('');
+  const [replyText,setReplyText]=useState('');
+
+  function createThread(e){
+    e.preventDefault();if(!newTitle.trim())return;
+    const t={id:Date.now(),title:newTitle.trim(),author:myUser,created:'just now',replies:[],tag:newTag,upvotes:0,body:newBody.trim()};
+    const updated=[t,...threads];setThreads(updated);saveThreads(updated);
+    setNewTitle('');setNewBody('');setNewTag('GENERAL');setShowNew(false);
+  }
+  function addReply(e){
+    e.preventDefault();if(!replyText.trim()||!activeThread)return;
+    const reply={id:Date.now(),author:myUser,text:replyText.trim(),time:'just now'};
+    const updated=threads.map(t=>t.id===activeThread.id?{...t,replies:[...t.replies,reply]}:t);
+    setThreads(updated);saveThreads(updated);
+    setActiveThread(updated.find(t=>t.id===activeThread.id));
+    setReplyText('');
+  }
+  function upvoteThread(id){
+    const updated=threads.map(t=>t.id===id?{...t,upvotes:(t.upvotes||0)+1}:t);
+    setThreads(updated);saveThreads(updated);
+  }
+
+  if(activeThread){
+    const thread=threads.find(t=>t.id===activeThread.id)||activeThread;
+    const tc=TAG_COLORS[thread.tag]||'var(--muted2)';
+    return(
+      <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
+        <div style={{padding:'16px 22px',borderBottom:'1px solid var(--border)',background:'var(--s1)',display:'flex',alignItems:'center',gap:12}}>
+          <button onClick={()=>setActiveThread(null)} style={{background:'none',border:'1px solid var(--border)',borderRadius:7,padding:'6px 12px',color:'var(--muted)',fontFamily:'var(--mono)',fontSize:10,cursor:'pointer',transition:'all .15s'}} onMouseEnter={e=>{e.currentTarget.style.color='var(--text)';e.currentTarget.style.borderColor='var(--border2)'}} onMouseLeave={e=>{e.currentTarget.style.color='var(--muted)';e.currentTarget.style.borderColor='var(--border)'}}>&#x2190; Forums</button>
+          <Chip label={thread.tag} color={tc} bg={`${tc}18`}/>
+        </div>
+        <div style={{flex:1,overflowY:'auto',padding:'22px'}}>
+          <div style={{background:'var(--s1)',border:'1px solid var(--border)',borderRadius:12,padding:'20px 22px',marginBottom:16}}>
+            <h2 style={{fontFamily:'var(--serif)',fontSize:22,fontWeight:400,marginBottom:8,lineHeight:1.3}}>{thread.title}</h2>
+            {thread.body&&<p style={{fontSize:13,color:'var(--muted2)',lineHeight:1.65,marginBottom:12}}>{thread.body}</p>}
+            <div style={{display:'flex',alignItems:'center',gap:10}}>
+              <span style={{fontFamily:'var(--mono)',fontSize:10,color:LIME}}>@{thread.author}</span>
+              <span style={{color:'var(--border2)'}}>&#xb7;</span>
+              <span style={{fontFamily:'var(--mono)',fontSize:10,color:'var(--muted)'}}>{thread.created}</span>
+              <div style={{flex:1}}/>
+              <button onClick={()=>upvoteThread(thread.id)} style={{background:'var(--s2)',border:'1px solid var(--border)',borderRadius:6,padding:'4px 10px',cursor:'pointer',color:'var(--muted2)',fontFamily:'var(--mono)',fontSize:11,display:'flex',alignItems:'center',gap:4,transition:'all .15s'}}>↑ {thread.upvotes||0}</button>
+            </div>
+          </div>
+          <div style={{fontFamily:'var(--mono)',fontSize:10,color:'var(--muted)',letterSpacing:'.07em',marginBottom:12}}>{thread.replies.length} REPL{thread.replies.length!==1?'IES':'Y'}</div>
+          <div style={{display:'flex',flexDirection:'column',gap:8,marginBottom:20}}>
+            {thread.replies.map((r,i)=>(
+              <div key={r.id} style={{background:'var(--s2)',borderRadius:10,padding:'13px 16px',animation:`cardIn .25s ease ${i*40}ms both`}}>
+                <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:7}}>
+                  <span style={{fontFamily:'var(--mono)',fontSize:11,color:LIME,fontWeight:600}}>@{r.author}</span>
+                  <span style={{fontFamily:'var(--mono)',fontSize:10,color:'var(--muted)'}}>{r.time}</span>
+                </div>
+                <div style={{fontSize:13,color:'var(--text)',lineHeight:1.6}}>{r.text}</div>
+              </div>
+            ))}
+            {thread.replies.length===0&&<div style={{fontFamily:'var(--mono)',fontSize:11,color:'var(--muted)',textAlign:'center',padding:'20px 0'}}>No replies yet. Be the first.</div>}
+          </div>
+          <form onSubmit={addReply} style={{background:'var(--s1)',border:'1px solid var(--border)',borderRadius:10,padding:'14px 16px'}}>
+            <div style={{fontFamily:'var(--mono)',fontSize:9,color:LIME,letterSpacing:'.07em',marginBottom:8}}>REPLY AS @{myUser}</div>
+            <textarea value={replyText} onChange={e=>setReplyText(e.target.value)} placeholder="Write your reply…" rows={3} style={{...INP,resize:'vertical',lineHeight:1.55,marginBottom:10}} onFocus={e=>e.target.style.borderColor=LIME} onBlur={e=>e.target.style.borderColor='var(--border)'}/>
+            <button type="submit" style={{...LIME_BTN,width:'auto',padding:'9px 20px'}}>POST REPLY</button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
+  return(
+    <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
+      <div style={{padding:'18px 22px',borderBottom:'1px solid var(--border)',background:'var(--s1)',display:'flex',alignItems:'center',gap:12}}>
+        <div style={{flex:1}}>
+          <h1 style={{fontFamily:'var(--serif)',fontSize:26,fontWeight:400,marginBottom:2}}>Forums</h1>
+          <p style={{fontFamily:'var(--mono)',fontSize:11,color:'var(--muted)'}}>HNU · CS Faculty · {threads.length} threads</p>
+        </div>
+        <button onClick={()=>setShowNew(s=>!s)} style={{background:showNew?'var(--s3)':LIME,color:showNew?'var(--text)':'#000',border:`1px solid ${showNew?'var(--border)':'transparent'}`,borderRadius:8,padding:'8px 16px',fontFamily:'var(--mono)',fontSize:10,fontWeight:700,letterSpacing:'.07em',cursor:'pointer',transition:'all .15s'}}>
+          {showNew?'✕ CANCEL':'+ NEW THREAD'}
+        </button>
+      </div>
+
+      <div style={{flex:1,overflowY:'auto',padding:'16px 22px'}}>
+        {showNew&&(
+          <form onSubmit={createThread} style={{background:'var(--s1)',border:`1px solid ${LIME}33`,borderRadius:12,padding:'20px',marginBottom:16,animation:'slideUp .25s ease'}}>
+            <div style={{fontFamily:'var(--mono)',fontSize:10,color:LIME,letterSpacing:'.08em',marginBottom:14}}>NEW THREAD · @{myUser}</div>
+            <div style={{display:'flex',flexDirection:'column',gap:12}}>
+              <div><label style={LBL}>Title</label><input value={newTitle} onChange={e=>setNewTitle(e.target.value)} placeholder="What's your question or topic?" style={INP} required onFocus={e=>e.target.style.borderColor=LIME} onBlur={e=>e.target.style.borderColor='var(--border)'}/></div>
+              <div>
+                <label style={LBL}>Tag</label>
+                <div style={{display:'flex',gap:6,flexWrap:'wrap',marginTop:5}}>
+                  {FORUM_TAGS.map(tag=>{const tc=TAG_COLORS[tag]||'var(--muted2)';const active=newTag===tag;return<button key={tag} type="button" onClick={()=>setNewTag(tag)} style={{fontFamily:'var(--mono)',fontSize:9,padding:'4px 10px',borderRadius:5,cursor:'pointer',fontWeight:700,letterSpacing:'.06em',background:active?`${tc}18`:'var(--s2)',border:`1px solid ${active?tc:'var(--border)'}`,color:active?tc:'var(--muted2)',transition:'all .15s'}}>{tag}</button>;})}
+                </div>
+              </div>
+              <div><label style={LBL}>Body <span style={{color:'var(--muted)',fontWeight:400}}>(optional)</span></label><textarea value={newBody} onChange={e=>setNewBody(e.target.value)} placeholder="Add more context if needed…" rows={3} style={{...INP,resize:'vertical'}} onFocus={e=>e.target.style.borderColor=LIME} onBlur={e=>e.target.style.borderColor='var(--border)'}/></div>
+              <button type="submit" style={{...LIME_BTN,width:'auto',padding:'9px 22px'}}>CREATE THREAD →</button>
+            </div>
+          </form>
+        )}
+
+        <div style={{display:'flex',flexDirection:'column',gap:7}}>
+          {threads.map((t,i)=>{
+            const tc=TAG_COLORS[t.tag]||'var(--muted2)';
+            return(
+              <div key={t.id} onClick={()=>setActiveThread(t)} style={{background:'var(--s1)',border:'1px solid var(--border)',borderRadius:10,padding:'14px 16px',cursor:'pointer',transition:'all .15s',animation:`cardIn .3s ease ${i*40}ms both`}}
+                onMouseEnter={e=>{e.currentTarget.style.background='var(--s2)';e.currentTarget.style.borderColor='var(--border2)'}}
+                onMouseLeave={e=>{e.currentTarget.style.background='var(--s1)';e.currentTarget.style.borderColor='var(--border)'}}>
+                <div style={{display:'flex',alignItems:'flex-start',gap:10}}>
+                  <div style={{flex:1}}>
+                    <div style={{display:'flex',alignItems:'center',gap:7,marginBottom:6}}>
+                      <Chip label={t.tag} color={tc} bg={`${tc}15`}/>
+                      {t.replies.length===0&&<Chip label="NO REPLIES" color="var(--muted)" bg="var(--s3)"/>}
+                    </div>
+                    <div style={{fontSize:14,fontWeight:600,lineHeight:1.35,marginBottom:6,color:'var(--text)'}}>{t.title}</div>
+                    {t.body&&<div style={{fontSize:12,color:'var(--muted)',lineHeight:1.5,marginBottom:8,display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical',overflow:'hidden'}}>{t.body}</div>}
+                    <div style={{display:'flex',alignItems:'center',gap:10}}>
+                      <span style={{fontFamily:'var(--mono)',fontSize:10,color:LIME}}>@{t.author}</span>
+                      <span style={{color:'var(--border2)'}}>&#xb7;</span>
+                      <span style={{fontFamily:'var(--mono)',fontSize:10,color:'var(--muted)'}}>{t.created}</span>
+                      <span style={{color:'var(--border2)'}}>&#xb7;</span>
+                      <span style={{fontFamily:'var(--mono)',fontSize:10,color:'var(--muted2)'}}>{t.replies.length} repl{t.replies.length!==1?'ies':'y'}</span>
+                    </div>
+                  </div>
+                  <div style={{fontFamily:'var(--mono)',fontSize:11,color:'var(--muted2)',display:'flex',alignItems:'center',gap:3,flexShrink:0}}>↑{t.upvotes||0}</div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── POST EVENT ─────────────────────────────────── */
+function PostEventView({myUser,posts,setPosts,onPosted}){
+  const [type,setType]=useState('EXAM');
+  const [title,setTitle]=useState('');
+  const [course,setCourse]=useState('');
+  const [prof,setProf]=useState('');
+  const [date,setDate]=useState('');
+  const [time,setTime]=useState('');
+  const [notes,setNotes]=useState('');
+  const [done,setDone]=useState(false);
+  function handleSubmit(e){
+    e.preventDefault();if(!title||!date)return;
+    const newPost={id:Date.now(),type,title,course,prof,date,time,notes,author:myUser,upvotes:0,status:'pending'};
+    const updated=[...posts,newPost];setPosts(updated);savePosts(updated);
+    setDone(true);setTimeout(()=>onPosted&&onPosted(),1600);
+  }
+  if(done)return<div style={{flex:1,display:'flex',alignItems:'center',justifyContent:'center',flexDirection:'column',gap:14,animation:'fadeUp .4s ease'}}><div style={{width:52,height:52,borderRadius:'50%',background:'rgba(212,255,58,.1)',border:`2px solid ${LIME}`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:22}}>✓</div><div style={{fontFamily:'var(--serif)',fontSize:22,color:LIME}}>Event submitted.</div><div style={{fontFamily:'var(--mono)',fontSize:11,color:'var(--muted)'}}>Pending admin review…</div></div>;
+  return(
+    <div style={{flex:1,overflowY:'auto',padding:'26px 22px',maxWidth:520,margin:'0 auto',width:'100%',animation:'fadeUp .3s ease'}}>
+      <div style={{marginBottom:20}}><h1 style={{fontFamily:'var(--serif)',fontSize:26,fontWeight:400,marginBottom:3}}>Post an Event</h1><div style={{fontFamily:'var(--mono)',fontSize:11,color:LIME}}>Posting as @{myUser}</div></div>
+      <form onSubmit={handleSubmit} style={{display:'flex',flexDirection:'column',gap:14}}>
+        <div><label style={LBL}>Event Type</label><div style={{display:'flex',gap:6,flexWrap:'wrap',marginTop:5}}>{['EXAM','QUIZ','ASSIGNMENT','OTHER'].map(t=>{const c=TYPE_CFG[t];const a=type===t;return<button key={t} type="button" onClick={()=>setType(t)} style={{padding:'6px 14px',borderRadius:20,cursor:'pointer',fontFamily:'var(--mono)',fontSize:10,fontWeight:700,letterSpacing:'.07em',background:a?c.bg:'var(--s2)',border:`1px solid ${a?c.color:'var(--border)'}`,color:a?c.color:'var(--muted2)',transition:'all .15s'}}>{c.label}</button>;})}
+        </div></div>
+        <div><label style={LBL}>Title <span style={{color:LIME}}>*</span></label><input value={title} onChange={e=>setTitle(e.target.value)} placeholder="e.g. Database Systems — Midterm" style={INP} required onFocus={e=>e.target.style.borderColor=LIME} onBlur={e=>e.target.style.borderColor='var(--border)'}/></div>
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+          <div><label style={LBL}>Course Code</label><input value={course} onChange={e=>setCourse(e.target.value)} placeholder="CS301" style={INP} onFocus={e=>e.target.style.borderColor=LIME} onBlur={e=>e.target.style.borderColor='var(--border)'}/></div>
+          <div><label style={LBL}>Professor</label><input value={prof} onChange={e=>setProf(e.target.value)} placeholder="Dr. …" style={INP} onFocus={e=>e.target.style.borderColor=LIME} onBlur={e=>e.target.style.borderColor='var(--border)'}/></div>
+        </div>
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+          <div><label style={LBL}>Date <span style={{color:LIME}}>*</span></label><input type="date" value={date} onChange={e=>setDate(e.target.value)} style={INP} required onFocus={e=>e.target.style.borderColor=LIME} onBlur={e=>e.target.style.borderColor='var(--border)'}/></div>
+          <div><label style={LBL}>Time</label><input type="time" value={time} onChange={e=>setTime(e.target.value)} style={INP} onFocus={e=>e.target.style.borderColor=LIME} onBlur={e=>e.target.style.borderColor='var(--border)'}/></div>
+        </div>
+        <div><label style={LBL}>Notes</label><textarea value={notes} onChange={e=>setNotes(e.target.value)} placeholder="Covers chapters 4–6…" rows={3} style={{...INP,resize:'vertical',lineHeight:1.5}} onFocus={e=>e.target.style.borderColor=LIME} onBlur={e=>e.target.style.borderColor='var(--border)'}/></div>
+        <div style={{borderTop:'1px solid var(--border)',paddingTop:13}}>
+          <div style={{background:'var(--s2)',border:'1px solid var(--border)',borderRadius:8,padding:'9px 13px',display:'flex',alignItems:'center',gap:8,marginBottom:12}}>
+            <span>&#x1F47B;</span>
+            <div><div style={{fontFamily:'var(--mono)',fontSize:9,color:'var(--muted)',letterSpacing:'.07em',marginBottom:1}}>POSTING AS</div><div style={{fontFamily:'var(--mono)',fontSize:12,color:LIME,fontWeight:700}}>@{myUser}</div></div>
+          </div>
+          <div style={{fontFamily:'var(--mono)',fontSize:9,color:'var(--muted)',marginBottom:10}}>⚠ Events go to admin review before appearing in the feed</div>
+          <button type="submit" style={LIME_BTN} onMouseEnter={e=>{e.currentTarget.style.background='#c8f020';e.currentTarget.style.transform='translateY(-1px)'}} onMouseLeave={e=>{e.currentTarget.style.background=LIME;e.currentTarget.style.transform=''}}>SUBMIT FOR REVIEW →</button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+/* ─── COURSES VIEW ───────────────────────────────── */
+function CoursesView({posts}){
+  const courses=['CS301 — Database Systems','CS202 — Algorithms','CS410 — Networks','CS305 — Operating Systems','CS490 — Web Development','MATH201 — Linear Algebra','MATH101 — Discrete Math','PHYS102 — Physics II'];
+  return(
+    <div style={{flex:1,overflowY:'auto',padding:'26px 22px',animation:'fadeUp .3s ease'}}>
+      <h1 style={{fontFamily:'var(--serif)',fontSize:26,fontWeight:400,marginBottom:3}}>My Courses</h1>
+      <p style={{fontFamily:'var(--mono)',fontSize:11,color:'var(--muted)',marginBottom:20}}>HNU · Spring 2026</p>
+      <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(200px,1fr))',gap:8}}>
+        {courses.map((c,i)=>{const code=c.split(' ')[0];const name=c.split('— ')[1];const cnt=posts.filter(p=>p.course===code&&p.status!=='deleted').length;return(
+          <div key={i} style={{background:'var(--s1)',border:'1px solid var(--border)',borderRadius:10,padding:'14px',cursor:'pointer',transition:'all .15s',animation:`cardIn .3s ease ${i*40}ms both`}} onMouseEnter={e=>{e.currentTarget.style.borderColor='var(--border2)';e.currentTarget.style.background='var(--s2)'}} onMouseLeave={e=>{e.currentTarget.style.borderColor='var(--border)';e.currentTarget.style.background='var(--s1)'}}>
+            <div style={{fontFamily:'var(--mono)',fontSize:10,color:'var(--muted)',marginBottom:4,letterSpacing:'.06em'}}>{code}</div>
+            <div style={{fontSize:13,fontWeight:600,lineHeight:1.3,marginBottom:9}}>{name}</div>
+            {cnt>0&&<div style={{fontFamily:'var(--mono)',fontSize:9,color:LIME,background:'rgba(212,255,58,.08)',border:'1px solid rgba(212,255,58,.2)',borderRadius:4,padding:'2px 6px',display:'inline-block'}}>{cnt} upcoming</div>}
+          </div>
+        );})}
+      </div>
+    </div>
+  );
+}
+
+/* ─── REPORT BUG BUTTON ──────────────────────────── */
+function ReportButton({myUser}){
+  const [open,setOpen]=useState(false);
+  const [category,setCategory]=useState('BUG');
+  const [desc,setDesc]=useState('');
+  const [screenshotName,setScreenshotName]=useState('');
+  const [screenshotPreview,setScreenshotPreview]=useState(null);
+  const [submitted,setSubmitted]=useState(false);
+  const fileRef=useRef();
+
+  function handleFile(e){
+    const f=e.target.files[0];
+    if(!f)return;
+    setScreenshotName(f.name);
+    const reader=new FileReader();
+    reader.onload=ev=>setScreenshotPreview(ev.target.result);
+    reader.readAsDataURL(f);
+  }
+  function handleSubmit(e){
+    e.preventDefault();if(!desc.trim())return;
+    const report={id:Date.now(),category,desc:desc.trim(),screenshotName,author:myUser||'anonymous',time:new Date().toLocaleString(),status:'open'};
+    const reports=getReports();saveReports([...reports,report]);
+    setSubmitted(true);setTimeout(()=>{setSubmitted(false);setOpen(false);setDesc('');setScreenshotName('');setScreenshotPreview(null);setCategory('BUG')},2000);
+  }
+
+  const CATS=['BUG','WRONG INFO','UI ISSUE','SUGGESTION','OTHER'];
+  const catColor={BUG:EXAM_C,'WRONG INFO':'#f0a500','UI ISSUE':ASGN_C,SUGGESTION:LIME,OTHER:'var(--muted2)'};
+
+  return(
+    <>
+      {/* Floating button */}
+      <button onClick={()=>setOpen(o=>!o)} title="Report a bug" style={{position:'fixed',bottom:22,right:22,zIndex:150,width:42,height:42,borderRadius:'50%',background:open?'var(--s3)':EXAM_C,border:`1px solid ${open?'var(--border)':EXAM_C}`,color:'#fff',fontSize:17,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 4px 16px rgba(255,79,79,.3)',transition:'all .2s',animation:open?'none':'reportFloat 3s ease-in-out infinite'}}>
+        {open?'✕':'🐞'}
+      </button>
+
+      {/* Modal */}
+      {open&&(
+        <div style={{position:'fixed',bottom:74,right:22,zIndex:149,width:320,background:'var(--s1)',border:'1px solid var(--border)',borderRadius:14,boxShadow:'0 16px 48px rgba(0,0,0,.6)',animation:'popIn .2s ease',overflow:'hidden'}}>
+          <div style={{padding:'14px 16px',borderBottom:'1px solid var(--border)',display:'flex',alignItems:'center',gap:8}}>
+            <span style={{fontFamily:'var(--mono)',fontSize:10,fontWeight:700,color:EXAM_C,letterSpacing:'.08em'}}>REPORT A BUG</span>
+            <div style={{flex:1}}/>
+            <span style={{fontFamily:'var(--mono)',fontSize:9,color:'var(--muted)'}}>@{myUser||'anonymous'}</span>
+          </div>
+          {submitted?(
+            <div style={{padding:'28px 16px',textAlign:'center',animation:'fadeIn .2s ease'}}>
+              <div style={{fontSize:22,marginBottom:8}}>✅</div>
+              <div style={{fontFamily:'var(--mono)',fontSize:11,color:LIME}}>Report submitted. Thank you!</div>
+            </div>
+          ):(
+            <form onSubmit={handleSubmit} style={{padding:'14px 16px',display:'flex',flexDirection:'column',gap:11}}>
+              <div>
+                <label style={{...LBL,fontSize:10}}>Category</label>
+                <div style={{display:'flex',gap:4,flexWrap:'wrap',marginTop:5}}>
+                  {CATS.map(c=>{const active=category===c;const cc=catColor[c]||'var(--muted)';return<button key={c} type="button" onClick={()=>setCategory(c)} style={{fontFamily:'var(--mono)',fontSize:9,padding:'3px 8px',borderRadius:4,cursor:'pointer',fontWeight:700,letterSpacing:'.05em',background:active?`${cc}18`:'var(--s2)',border:`1px solid ${active?cc:'var(--border)'}`,color:active?cc:'var(--muted)',transition:'all .12s'}}>{c}</button>;})}
+                </div>
+              </div>
+              <div>
+                <label style={{...LBL,fontSize:10}}>Description <span style={{color:LIME}}>*</span></label>
+                <textarea value={desc} onChange={e=>setDesc(e.target.value)} placeholder="Describe the issue clearly…" rows={3} required style={{...INP,fontSize:12,resize:'vertical',lineHeight:1.5}} onFocus={e=>e.target.style.borderColor=LIME} onBlur={e=>e.target.style.borderColor='var(--border)'}/>
+              </div>
+              <div>
+                <label style={{...LBL,fontSize:10}}>Screenshot <span style={{color:'var(--muted)',fontWeight:400}}>(optional)</span></label>
+                <input ref={fileRef} type="file" accept="image/*" onChange={handleFile} style={{display:'none'}}/>
+                <button type="button" onClick={()=>fileRef.current.click()} style={{width:'100%',background:'var(--s2)',border:'1px dashed var(--border2)',borderRadius:7,padding:'8px 12px',color:'var(--muted)',fontFamily:'var(--mono)',fontSize:10,cursor:'pointer',textAlign:'left',transition:'border-color .15s'}} onMouseEnter={e=>e.currentTarget.style.borderColor=LIME} onMouseLeave={e=>e.currentTarget.style.borderColor='var(--border2)'}>
+                  {screenshotName?`🖼️ ${screenshotName}`:'+ Attach screenshot'}
+                </button>
+                {screenshotPreview&&<div style={{marginTop:6,borderRadius:6,overflow:'hidden',border:'1px solid var(--border)',maxHeight:80}}><img src={screenshotPreview} alt="preview" style={{width:'100%',objectFit:'cover',display:'block'}}/></div>}
+              </div>
+              <button type="submit" style={{...LIME_BTN,padding:'9px',fontSize:10}}>SUBMIT REPORT →</button>
+            </form>
+          )}
+        </div>
+      )}
+    </>
+  );
+}
+
+/* ─── ADMIN TAB RENDERER ─────────────────────────── */
+function renderAdminTab(tab, {approved,pending,openReports,deleted,approvePost,deletePost,dismissReport}) {
+  const empty = (msg) => (
+    <div style={{fontFamily:'var(--mono)',fontSize:11,color:'var(--muted)',textAlign:'center',paddingTop:30}}>{msg}</div>
+  );
+  const catColors = {BUG:EXAM_C,'WRONG INFO':'#f0a500','UI ISSUE':ASGN_C,SUGGESTION:LIME,OTHER:'var(--muted2)'};
+
+  if (tab === 'events') {
+    return approved.map(function(p) {
+      const cfg = TYPE_CFG[p.type] || TYPE_CFG.OTHER;
+      return (
+        <div key={p.id} style={{background:'var(--s1)',border:'1px solid var(--border)',borderLeft:`3px solid ${cfg.color}`,borderRadius:9,padding:'12px 14px',display:'flex',alignItems:'center',gap:12,flexWrap:'wrap',animation:'cardIn .2s ease both'}}>
+          <Badge type={p.type} small={true}/>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontSize:13,fontWeight:600,marginBottom:2,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{p.title}</div>
+            <div style={{fontFamily:'var(--mono)',fontSize:9,color:'var(--muted)'}}>{p.course} · {fmtDate(p.date)} · @{p.author} · {p.upvotes} votes</div>
+          </div>
+          <button onClick={function(){deletePost(p.id)}} style={{fontFamily:'var(--mono)',fontSize:9,padding:'4px 10px',borderRadius:5,background:'rgba(255,79,79,.08)',border:'1px solid rgba(255,79,79,.25)',color:EXAM_C,cursor:'pointer',transition:'all .15s',whiteSpace:'nowrap'}}>DELETE</button>
+        </div>
+      );
+    });
+  }
+
+  if (tab === 'pending') {
+    if (pending.length === 0) return empty('No pending events.');
+    return pending.map(function(p) {
+      return (
+        <div key={p.id} style={{background:'var(--s2)',border:'1px solid #f0a50033',borderLeft:'3px solid #f0a500',borderRadius:9,padding:'14px 16px',animation:'cardIn .2s ease both'}}>
+          <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:8}}>
+            <Badge type={p.type} small={true}/>
+            <Chip label="PENDING REVIEW" color="#f0a500" bg="rgba(240,165,0,.1)"/>
+            <div style={{flex:1}}/>
+            <span style={{fontFamily:'var(--mono)',fontSize:10,color:'var(--muted)'}}>@{p.author}</span>
+          </div>
+          <div style={{fontSize:14,fontWeight:600,marginBottom:4}}>{p.title}</div>
+          <div style={{fontFamily:'var(--mono)',fontSize:10,color:'var(--muted2)',marginBottom:10}}>{p.course}{p.prof ? ' · '+p.prof : ''} · {fmtDate(p.date)} · {p.time}</div>
+          {p.notes && <div style={{fontSize:12,color:'var(--muted)',fontStyle:'italic',marginBottom:10,borderLeft:'2px solid var(--border2)',paddingLeft:8}}>{p.notes}</div>}
+          <div style={{display:'flex',gap:7}}>
+            <button onClick={function(){approvePost(p.id)}} style={{fontFamily:'var(--mono)',fontSize:10,padding:'6px 16px',borderRadius:6,background:'rgba(212,255,58,.1)',border:'1px solid rgba(212,255,58,.35)',color:LIME,cursor:'pointer',fontWeight:700,transition:'all .15s'}}>✓ APPROVE</button>
+            <button onClick={function(){deletePost(p.id)}} style={{fontFamily:'var(--mono)',fontSize:10,padding:'6px 16px',borderRadius:6,background:'rgba(255,79,79,.08)',border:'1px solid rgba(255,79,79,.25)',color:EXAM_C,cursor:'pointer',fontWeight:700,transition:'all .15s'}}>✕ REJECT</button>
+          </div>
+        </div>
+      );
+    });
+  }
+
+  if (tab === 'reports') {
+    if (openReports.length === 0) return empty('No open reports.');
+    return openReports.map(function(r) {
+      const cc = catColors[r.category] || 'var(--muted2)';
+      return (
+        <div key={r.id} style={{background:'var(--s1)',border:'1px solid var(--border)',borderRadius:9,padding:'14px 16px',animation:'cardIn .2s ease both'}}>
+          <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:7}}>
+            <Chip label={r.category} color={cc} bg={cc+'18'}/>
+            <span style={{fontFamily:'var(--mono)',fontSize:10,color:LIME}}>@{r.author}</span>
+            <span style={{fontFamily:'var(--mono)',fontSize:10,color:'var(--muted)',marginLeft:'auto'}}>{r.time}</span>
+          </div>
+          <div style={{fontSize:13,color:'var(--text)',lineHeight:1.55,marginBottom:r.screenshotName?8:10}}>{r.desc}</div>
+          {r.screenshotName && <div style={{fontFamily:'var(--mono)',fontSize:9,color:'var(--muted)',marginBottom:10}}>🖼 {r.screenshotName}</div>}
+          <button onClick={function(){dismissReport(r.id)}} style={{fontFamily:'var(--mono)',fontSize:9,padding:'4px 12px',borderRadius:5,background:'var(--s2)',border:'1px solid var(--border)',color:'var(--muted)',cursor:'pointer',transition:'all .15s'}}>DISMISS</button>
+        </div>
+      );
+    });
+  }
+
+  if (tab === 'deleted') {
+    if (deleted.length === 0) return empty('Nothing deleted.');
+    return deleted.map(function(p) {
+      return (
+        <div key={p.id} style={{background:'var(--s1)',border:'1px solid var(--border)',borderRadius:9,padding:'12px 14px',opacity:.5,animation:'cardIn .2s ease both',display:'flex',alignItems:'center',gap:10}}>
+          <Badge type={p.type} small={true}/>
+          <div style={{flex:1,fontSize:13,fontWeight:600,color:'var(--muted)',textDecoration:'line-through'}}>{p.title}</div>
+          <span style={{fontFamily:'var(--mono)',fontSize:10,color:'var(--muted)'}}>@{p.author}</span>
+          <button onClick={function(){approvePost(p.id)}} style={{fontFamily:'var(--mono)',fontSize:9,padding:'3px 10px',borderRadius:5,background:'rgba(212,255,58,.08)',border:'1px solid rgba(212,255,58,.25)',color:LIME,cursor:'pointer'}}>RESTORE</button>
+        </div>
+      );
+    });
+  }
+
+  return null;
+}
+
+/* ─── ADMIN PANEL ────────────────────────────────── */
+function AdminPanel({onClose,posts,setPosts}){
+  const [authed,setAuthed]=useState(()=>sessionStorage.getItem('pulsara_admin')==='1');
+  const [pass,setPass]=useState('');
+  const [passErr,setPassErr]=useState(false);
+  const [tab,setTab]=useState('events');
+  const [reports,setReports]=useState(()=>getReports());
+
+  function login(e){e.preventDefault();if(pass===ADMIN_PASS){setAuthed(true);sessionStorage.setItem('pulsara_admin','1')}else{setPassErr(true);setTimeout(()=>setPassErr(false),600)}}
+
+  function approvePost(id){const u=posts.map(p=>p.id===id?{...p,status:'approved'}:p);setPosts(u);savePosts(u)}
+  function deletePost(id){const u=posts.map(p=>p.id===id?{...p,status:'deleted'}:p);setPosts(u);savePosts(u)}
+  function dismissReport(id){const u=reports.map(r=>r.id===id?{...r,status:'dismissed'}:r);setReports(u);saveReports(u)}
+
+  const pending=posts.filter(p=>p.status==='pending');
+  const approved=posts.filter(p=>p.status==='approved');
+  const deleted=posts.filter(p=>p.status==='deleted');
+  const openReports=reports.filter(r=>r.status!=='dismissed');
+
+  const TABS=[{id:'events',label:`Events (${posts.filter(p=>p.status!=='deleted').length})`},{id:'pending',label:`Pending (${pending.length})`,alert:pending.length>0},{id:'reports',label:`Reports (${openReports.length})`,alert:openReports.length>0},{id:'deleted',label:`Deleted (${deleted.length})`}];
+
+  return(
+    <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,.92)',zIndex:300,display:'flex',alignItems:'stretch',justifyContent:'flex-end',animation:'fadeIn .15s ease'}}>
+      <div style={{width:'100%',maxWidth:740,background:'var(--bg)',borderLeft:'1px solid var(--border)',display:'flex',flexDirection:'column',animation:'slideUp .25s ease',overflow:'hidden'}}>
+        {/* Admin header */}
+        <div style={{padding:'16px 22px',borderBottom:'1px solid var(--border)',background:'var(--s1)',display:'flex',alignItems:'center',gap:12}}>
+          <div style={{fontFamily:'var(--mono)',fontSize:9,color:EXAM_C,letterSpacing:'.1em',border:'1px solid rgba(255,79,79,.3)',padding:'3px 8px',borderRadius:4,background:'rgba(255,79,79,.08)'}}>ADMIN</div>
+          <span style={{fontFamily:'var(--serif)',fontSize:18,fontWeight:400}}>Pulsara Dashboard</span>
+          <div style={{flex:1}}/>
+          <button onClick={onClose} style={{background:'none',border:'1px solid var(--border)',borderRadius:7,padding:'6px 12px',color:'var(--muted)',fontFamily:'var(--mono)',fontSize:10,cursor:'pointer',transition:'all .15s'}} onMouseEnter={e=>e.currentTarget.style.color='var(--text)'} onMouseLeave={e=>e.currentTarget.style.color='var(--muted)'}>CLOSE ✕</button>
+        </div>
+
+        {!authed?(
+          <div style={{flex:1,display:'flex',alignItems:'center',justifyContent:'center',padding:'40px'}}>
+            <div style={{width:'100%',maxWidth:340,animation:'popIn .3s ease'}}>
+              <div style={{fontFamily:'var(--mono)',fontSize:22,color:EXAM_C,fontWeight:700,marginBottom:4,letterSpacing:'-.01em'}}>&#x1F512;</div>
+              <h2 style={{fontFamily:'var(--serif)',fontSize:24,fontWeight:400,marginBottom:5}}>Admin access</h2>
+              <p style={{fontSize:13,color:'var(--muted)',marginBottom:22,lineHeight:1.6}}>Enter the admin password to continue.</p>
+              <form onSubmit={login} style={{display:'flex',flexDirection:'column',gap:12}}>
+                <input type="password" value={pass} onChange={e=>setPass(e.target.value)} placeholder="Password" autoFocus style={{...INP,animation:passErr?'shake .35s ease':''}} onFocus={e=>e.target.style.borderColor=LIME} onBlur={e=>e.target.style.borderColor='var(--border)'}/>
+                {passErr&&<div style={{fontFamily:'var(--mono)',fontSize:10,color:EXAM_C}}>❌ Incorrect password.</div>}
+                <button type="submit" style={LIME_BTN}>ENTER</button>
+              </form>
+            </div>
+          </div>
+        ):(
+          <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
+            {/* Stats bar */}
+            <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',borderBottom:'1px solid var(--border)'}}>
+              {[{label:'Total Events',val:posts.filter(p=>p.status!=='deleted').length,color:LIME},{label:'Pending',val:pending.length,color:pending.length?EXAM_C:'var(--muted)'},{label:'Open Reports',val:openReports.length,color:openReports.length?'#f0a500':'var(--muted)'},{label:'Deleted',val:deleted.length,color:'var(--muted)'}].map((s,i)=>(
+                <div key={i} style={{padding:'14px 18px',borderRight:i<3?'1px solid var(--border)':'none',background:'var(--s1)'}}>
+                  <div style={{fontFamily:'var(--mono)',fontSize:9,color:'var(--muted)',letterSpacing:'.08em',marginBottom:4}}>{s.label.toUpperCase()}</div>
+                  <div style={{fontFamily:'var(--mono)',fontSize:22,fontWeight:700,color:s.color}}>{s.val}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Tabs */}
+            <div style={{display:'flex',gap:0,borderBottom:'1px solid var(--border)',background:'var(--s1)'}}>
+              {TABS.map(t=>{const active=tab===t.id;return(
+                <button key={t.id} onClick={()=>setTab(t.id)} style={{padding:'10px 18px',background:active?'var(--bg)':'none',border:'none',borderBottom:active?'2px solid '+LIME:'2px solid transparent',color:active?LIME:'var(--muted)',fontFamily:'var(--mono)',fontSize:10,fontWeight:600,letterSpacing:'.06em',cursor:'pointer',display:'flex',alignItems:'center',gap:5,transition:'all .15s'}}>
+                  {t.label}
+                  {t.alert&&<div style={{width:6,height:6,borderRadius:'50%',background:EXAM_C}}/>}
+                </button>
+              );})}
+            </div>
+
+            {/* Content */}
+            <div style={{flex:1,overflowY:'auto',padding:'16px 20px',display:'flex',flexDirection:'column',gap:7}}>
+              {/* TAB CONTENT */}
+              {renderAdminTab(tab,{approved,pending,openReports,deleted,approvePost,deletePost,dismissReport})}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ─── SIDEBAR ────────────────────────────────────── */
+function Sidebar({page,setPage,myUser,mobileOpen,setMobileOpen,openAdmin,pendingCount}){
+  const nav=[
+    {id:'feed',    icon:'▦', label:'Feed'},
+    {id:'calendar',icon:'◫', label:'Calendar'},
+    {id:'finals',  icon:'📅', label:'Finals Schedule'},
+    {id:'forums',  icon:'💬', label:'Forums'},
+    {id:'courses', icon:'⊟', label:'My Courses'},
+    {id:'post',    icon:'+',     label:'Post Event'},
+  ];
+  const isMobile=window.innerWidth<768;
+  return(
+    <>
+      {mobileOpen&&<div onClick={()=>setMobileOpen(false)} style={{position:'fixed',inset:0,background:'rgba(0,0,0,.7)',zIndex:99}}/>}
+      <aside style={{width:224,flexShrink:0,background:'var(--s1)',borderRight:'1px solid var(--border)',display:'flex',flexDirection:'column',padding:'20px 13px',gap:3,height:'100vh',position:isMobile?'fixed':'sticky',top:0,left:0,zIndex:100,transition:'transform .25s',transform:isMobile&&!mobileOpen?'translateX(-100%)':'translateX(0)'}}>
+        <div style={{display:'flex',alignItems:'center',gap:7,padding:'3px 8px',marginBottom:16}}>
+          <span style={{fontFamily:'var(--serif)',fontSize:20,letterSpacing:'-.02em'}}>Pulsara</span><PulseDot/>
+        </div>
+        <nav style={{display:'flex',flexDirection:'column',gap:2,flex:1}}>
+          {nav.map(item=>{const active=page===item.id;return(
+            <button key={item.id} onClick={()=>{setPage(item.id);setMobileOpen(false)}} style={{display:'flex',alignItems:'center',gap:8,padding:'8px 10px',borderRadius:7,background:active?'var(--lime-dim)':'none',border:`1px solid ${active?LIME+'22':'transparent'}`,color:active?LIME:'var(--muted2)',fontFamily:'var(--sans)',fontSize:13,fontWeight:active?600:400,cursor:'pointer',textAlign:'left',transition:'all .15s'}}
+              onMouseEnter={e=>{if(!active){e.currentTarget.style.background='var(--s2)';e.currentTarget.style.color='var(--text)'}}}
+              onMouseLeave={e=>{if(!active){e.currentTarget.style.background='none';e.currentTarget.style.color='var(--muted2)'}}}>
+              <span style={{fontFamily:'var(--mono)',fontSize:13,width:16,textAlign:'center'}}>{item.icon}</span>
+              {item.label}
+              {item.id==='post'&&<span style={{marginLeft:'auto',background:LIME,color:'#000',borderRadius:3,width:14,height:14,display:'flex',alignItems:'center',justifyContent:'center',fontSize:10,fontWeight:700}}>+</span>}
+              {item.id==='post'&&pendingCount>0&&<span style={{marginLeft:4,background:EXAM_C,color:'#fff',borderRadius:3,width:14,height:14,display:'flex',alignItems:'center',justifyContent:'center',fontSize:9,fontWeight:700}}>{pendingCount}</span>}
+            </button>
+          );})}
+        </nav>
+        <div style={{borderTop:'1px solid var(--border)',paddingTop:12}}>
+          <div style={{fontFamily:'var(--mono)',fontSize:9,color:'var(--muted)',letterSpacing:'.1em',marginBottom:6}}>UNIVERSITY</div>
+          <div style={{fontFamily:'var(--mono)',fontSize:10,color:'var(--muted2)',marginBottom:12}}>HNU · CS Faculty</div>
+          <div style={{background:'var(--s2)',border:'1px solid var(--border)',borderRadius:8,padding:'9px 11px',marginBottom:10}}>
+            <div style={{display:'flex',alignItems:'center',gap:4,marginBottom:3}}><span style={{fontSize:11}}>&#x1F47B;</span><span style={{fontFamily:'var(--mono)',fontSize:9,color:'var(--muted)',letterSpacing:'.07em'}}>ANONYMOUS</span></div>
+            <div style={{fontFamily:'var(--mono)',fontSize:12,color:LIME,fontWeight:700}}>@{myUser}</div>
+          </div>
+          <button onClick={openAdmin} style={{width:'100%',background:'none',border:'1px solid var(--border)',borderRadius:7,padding:'7px 11px',display:'flex',alignItems:'center',gap:6,cursor:'pointer',color:'var(--muted)',fontFamily:'var(--mono)',fontSize:9,letterSpacing:'.07em',transition:'all .15s'}} onMouseEnter={e=>{e.currentTarget.style.borderColor='rgba(255,79,79,.4)';e.currentTarget.style.color=EXAM_C}} onMouseLeave={e=>{e.currentTarget.style.borderColor='var(--border)';e.currentTarget.style.color='var(--muted)'}}>
+            <span>&#x1F512;</span> ADMIN PANEL
+            {pendingCount>0&&<span style={{marginLeft:'auto',background:EXAM_C,color:'#fff',borderRadius:3,padding:'1px 5px',fontSize:9,fontWeight:700}}>{pendingCount}</span>}
+          </button>
+        </div>
+      </aside>
+    </>
+  );
+}
+
+/* ─── APP SHELL ──────────────────────────────────── */
+function AppShell({myUser}){
+  const [page,setPage]=useState('feed');
+  const [mobileOpen,setMobileOpen]=useState(false);
+  const [showAdmin,setShowAdmin]=useState(false);
+  const [posts,setPosts]=useState(()=>getPosts());
+  const pendingCount=posts.filter(p=>p.status==='pending').length;
+
+  return(
+    <div style={{display:'flex',height:'100vh',background:'var(--bg)',overflow:'hidden'}}>
+      <Sidebar page={page} setPage={setPage} myUser={myUser} mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} openAdmin={()=>setShowAdmin(true)} pendingCount={pendingCount}/>
+      <button onClick={()=>setMobileOpen(true)} style={{display:'none',position:'fixed',top:13,left:13,zIndex:98,background:'var(--s1)',border:'1px solid var(--border)',borderRadius:6,width:33,height:33,cursor:'pointer',color:'var(--text)',fontSize:14,alignItems:'center',justifyContent:'center'}} id="hamburger">&#x2630;</button>
+      <main style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',minWidth:0}}>
+        {page==='feed'     &&<FeedView posts={posts} setPosts={setPosts} myUser={myUser}/>}
+        {page==='calendar' &&<CalendarView posts={posts}/>}
+        {page==='finals'   &&<FinalsView/>}
+        {page==='forums'   &&<ForumsView myUser={myUser}/>}
+        {page==='courses'  &&<CoursesView posts={posts}/>}
+        {page==='post'     &&<PostEventView myUser={myUser} posts={posts} setPosts={setPosts} onPosted={()=>setPage('feed')}/>}
+      </main>
+      <ReportButton myUser={myUser}/>
+      {showAdmin&&<AdminPanel onClose={()=>setShowAdmin(false)} posts={posts} setPosts={setPosts}/>}
+    </div>
+  );
+}
+
+/* ─── LANDING PAGE ───────────────────────────────── */
+function LandingPage({onEnterApp,onSignup}){
+  const ticker=['EXAM','QUIZ','ASSIGNMENT','EXAM','QUIZ','ASSIGNMENT','EXAM','QUIZ','ASSIGNMENT','EXAM','QUIZ','ASSIGNMENT'];
+  return(
+    <div style={{minHeight:'100vh',background:'var(--bg)',overflowX:'hidden'}}>
+      <nav style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'16px 40px',borderBottom:'1px solid var(--border)',position:'sticky',top:0,background:'rgba(10,10,10,.92)',backdropFilter:'blur(12px)',zIndex:50}}>
+        <div style={{display:'flex',alignItems:'center',gap:7}}><span style={{fontFamily:'var(--serif)',fontSize:20,letterSpacing:'-.02em'}}>Pulsara</span><PulseDot/></div>
+        <div style={{display:'flex',gap:7,alignItems:'center'}}>
+          <span style={{fontFamily:'var(--mono)',fontSize:10,color:'var(--muted)',padding:'5px 10px',border:'1px solid var(--border)',borderRadius:5}}>BETA · HNU</span>
+          <button onClick={onSignup} style={{...GHOST_BTN,padding:'7px 14px'}}>SIGN UP</button>
+          <button onClick={onEnterApp} style={{background:LIME,color:'#000',border:'none',borderRadius:7,padding:'7px 14px',fontFamily:'var(--mono)',fontSize:10,fontWeight:700,letterSpacing:'.07em',cursor:'pointer',transition:'all .15s'}} onMouseEnter={e=>e.currentTarget.style.background='#c8f020'} onMouseLeave={e=>e.currentTarget.style.background=LIME}>OPEN APP →</button>
+        </div>
+      </nav>
+
+      <section style={{padding:'72px 40px 40px',maxWidth:1100,margin:'0 auto',display:'grid',gridTemplateColumns:'1fr 1fr',gap:60,alignItems:'center'}}>
+        <div style={{animation:'fadeUp .7s ease both'}}>
+          <div style={{fontFamily:'var(--mono)',fontSize:10,color:LIME,letterSpacing:'.1em',marginBottom:16,display:'flex',alignItems:'center',gap:6}}><PulseDot/> FOR EGYPTIAN UNIVERSITY STUDENTS</div>
+          <h1 style={{fontFamily:'var(--serif)',fontSize:64,lineHeight:1.0,letterSpacing:'-.03em',marginBottom:20,fontWeight:400}}>Stop missing<br/><em style={{color:LIME,fontStyle:'italic'}}>deadlines.</em></h1>
+          <p style={{fontSize:15,color:'var(--muted2)',lineHeight:1.75,maxWidth:420,marginBottom:28,fontWeight:300}}>Exams get announced in a 500-person WhatsApp group, then buried under memes and voice notes. Pulsara is a community-verified deadline board — anonymous, trusted, always on.</p>
+          <div style={{display:'flex',gap:9,flexWrap:'wrap'}}>
+            <button onClick={onSignup} style={{background:LIME,color:'#000',border:'none',borderRadius:8,padding:'12px 26px',fontFamily:'var(--mono)',fontSize:11,fontWeight:700,letterSpacing:'.08em',cursor:'pointer',transition:'all .15s'}} onMouseEnter={e=>{e.currentTarget.style.background='#c8f020';e.currentTarget.style.transform='translateY(-1px)'}} onMouseLeave={e=>{e.currentTarget.style.background=LIME;e.currentTarget.style.transform=''}}>JOIN WAITLIST →</button>
+            <button onClick={onEnterApp} style={{...GHOST_BTN,padding:'12px 20px'}} onMouseEnter={e=>{e.currentTarget.style.borderColor='var(--border2)';e.currentTarget.style.color='var(--text)'}} onMouseLeave={e=>{e.currentTarget.style.borderColor='var(--border)';e.currentTarget.style.color='var(--muted)'}}>Explore app</button>
+          </div>
+          <div style={{marginTop:14,fontFamily:'var(--mono)',fontSize:10,color:'var(--muted)'}}>No real name. No account needed to post.</div>
+        </div>
+        <div style={{animation:'fadeUp .7s ease .15s both',position:'relative'}}><WhatsAppMock/></div>
+      </section>
+
+      <div style={{overflow:'hidden',borderTop:'1px solid var(--border)',borderBottom:'1px solid var(--border)',padding:'9px 0',background:'var(--s1)',margin:'56px 0'}}>
+        <div style={{display:'flex',gap:18,animation:'marquee 20s linear infinite',width:'max-content'}}>
+          {[...ticker,...ticker].map((t,i)=>{const c=TYPE_CFG[t];return<span key={i} style={{fontFamily:'var(--mono)',fontSize:10,fontWeight:700,letterSpacing:'.1em',color:c.color,padding:'2px 10px',borderRadius:4,background:c.bg,whiteSpace:'nowrap'}}>{c.label}</span>;})}
+        </div>
+      </div>
+
+      <section style={{padding:'0 40px 80px',maxWidth:900,margin:'0 auto'}}>
+        <div style={{fontFamily:'var(--mono)',fontSize:10,color:'var(--muted)',letterSpacing:'.1em',marginBottom:24}}>HOW IT WORKS</div>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(220px,1fr))',gap:1,border:'1px solid var(--border)',borderRadius:12,overflow:'hidden'}}>
+          {[{n:'01',title:'Post',desc:'Drop an exam, quiz, or assignment anonymously in 10 seconds. Events go to admin review before appearing.'},{n:'02',title:'Verify',desc:'Peers upvote to confirm. 5 upvotes = community-verified. Wrong info gets flagged and reviewed.'},{n:'03',title:'Track',desc:'Clean calendar with color sticker labels per event type. Know what’s coming without scrolling 200 messages.'}].map((s,i)=>(
+            <div key={i} style={{padding:'26px 22px',background:'var(--s1)',borderRight:i<2?'1px solid var(--border)':'none'}}>
+              <div style={{fontFamily:'var(--mono)',fontSize:32,color:'var(--s3)',fontWeight:700,marginBottom:9,lineHeight:1}}>{s.n}</div>
+              <div style={{fontFamily:'var(--serif)',fontSize:21,fontWeight:400,marginBottom:7}}>{s.title}</div>
+              <div style={{fontSize:13,color:'var(--muted)',lineHeight:1.65}}>{s.desc}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section style={{padding:'60px 40px 100px',maxWidth:560,margin:'0 auto',textAlign:'center'}}>
+        <div style={{fontFamily:'var(--serif)',fontSize:40,fontWeight:400,lineHeight:1.1,marginBottom:14}}>Your group chat<br/>shouldn’t be a<br/><em style={{color:LIME}}>liability.</em></div>
+        <p style={{fontSize:13,color:'var(--muted)',marginBottom:26,lineHeight:1.7}}>Join students at HNU already tracking deadlines the right way.</p>
+        <button onClick={onSignup} style={{background:LIME,color:'#000',border:'none',borderRadius:8,padding:'13px 30px',fontFamily:'var(--mono)',fontSize:11,fontWeight:700,letterSpacing:'.08em',cursor:'pointer',transition:'all .15s'}} onMouseEnter={e=>{e.currentTarget.style.background='#c8f020';e.currentTarget.style.transform='translateY(-2px)';e.currentTarget.style.boxShadow=`0 8px 28px rgba(212,255,58,.2)`}} onMouseLeave={e=>{e.currentTarget.style.background=LIME;e.currentTarget.style.transform='';e.currentTarget.style.boxShadow=''}}>JOIN WAITLIST — IT’S FREE →</button>
+      </section>
+
+      <footer style={{borderTop:'1px solid var(--border)',padding:'16px 40px',display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:8}}>
+        <div style={{display:'flex',alignItems:'center',gap:6}}><span style={{fontFamily:'var(--serif)',fontSize:15}}>Pulsara</span><PulseDot/></div>
+        <span style={{fontFamily:'var(--mono)',fontSize:10,color:'var(--muted)'}}>Helwan National University · CS Faculty · 2026</span>
+      </footer>
+    </div>
+  );
+}
+
+/* ─── ROOT ───────────────────────────────────────── */
+function Root(){
+  const [screen,setScreen]=useState(()=>localStorage.getItem('pulsara_screen_v2')||'landing');
+  const [showSignup,setShowSignup]=useState(false);
+  const [currentUser,setCurrentUser]=useState(()=>getUser());
+
+  function enterApp(){
+    const u=getUser();
+    if(u){setCurrentUser(u);setScreen('app');localStorage.setItem('pulsara_screen_v2','app');}
+    else setShowSignup(true);
+  }
+  function handleSignupComplete(u){setCurrentUser(u);setShowSignup(false);setScreen('app');localStorage.setItem('pulsara_screen_v2','app')}
+
+  useEffect(()=>{
+    const s=document.createElement('style');
+    s.textContent=`input:focus,textarea:focus{border-color:${LIME}!important;box-shadow:0 0 0 2px rgba(212,255,58,.08)!important} @media(max-width:768px){#hamburger{display:flex!important}}`;
+    document.head.appendChild(s);return()=>document.head.removeChild(s);
+  },[]);
+
+  return(
+    <>
+      {showSignup&&<SignupModal onComplete={handleSignupComplete}/>}
+      {screen==='landing'&&<LandingPage onEnterApp={enterApp} onSignup={()=>setShowSignup(true)}/>}
+      {screen==='app'&&currentUser&&<AppShell myUser={currentUser.username}/>}
+      {screen==='app'&&!currentUser&&<SignupModal onComplete={handleSignupComplete}/>}
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<Root/>);
+</script>
+</body>
+</html>
