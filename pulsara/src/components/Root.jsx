@@ -1,18 +1,22 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { getUser } from '@/lib/storage';
 import SignupModal from '@/components/SignupModal';
 import LandingPage from '@/components/LandingPage';
 import AppShell from '@/components/AppShell';
 import AdminPanel from '@/components/AdminPanel';
+import LoadingScreen from '@/components/LoadingScreen';
 import { LanguageProvider } from '@/lib/i18n';
 
 export default function Root() {
   const [mounted, setMounted] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [screen, setScreen] = useState('landing');
   const [showSignup, setShowSignup] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
   const [showAdmin, setShowAdmin] = useState(false);
+
+  const handleLoadingComplete = useCallback(() => setLoading(false), []);
 
   useEffect(() => {
     setMounted(true);
@@ -53,6 +57,8 @@ export default function Root() {
   }
 
   if (!mounted) return null;
+
+  if (loading) return <LoadingScreen onComplete={handleLoadingComplete} />;
 
   // Admin panel accessed via #/adminpannelX — renders as full page
   if (showAdmin) {

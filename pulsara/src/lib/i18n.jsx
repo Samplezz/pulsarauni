@@ -138,6 +138,20 @@ const dict = {
     landing_cta_p: 'Enter your classroom code to join students already tracking deadlines the right way.',
     landing_cta_btn: 'ENTER CLASSROOM CODE →',
     
+    // Footer
+    footer_product: 'PRODUCT',
+    footer_feed: 'Feed',
+    footer_calendar: 'Calendar',
+    footer_reminders: 'Reminders',
+    footer_company: 'COMPANY',
+    footer_about: 'About',
+    footer_careers: 'Careers',
+    footer_contact: 'Contact',
+    footer_legal: 'LEGAL',
+    footer_privacy: 'Privacy',
+    footer_terms: 'Terms',
+    footer_copy: '© 2026 Pulsara. Made by students, for students.',
+    
     // General
     gen_verified: 'Verified',
     gen_more: 'more',
@@ -279,6 +293,20 @@ const dict = {
     landing_cta_h3: '.عبئاً',
     landing_cta_p: 'أدخل رمز الفصل للانضمام إلى الطلاب الذين يتتبعون المواعيد بالطريقة الصحيحة.',
     landing_cta_btn: '← أدخل رمز الفصل',
+    
+    // Footer
+    footer_product: 'المنتج',
+    footer_feed: 'الخلاصة',
+    footer_calendar: 'التقويم',
+    footer_reminders: 'التذكيرات',
+    footer_company: 'الشركة',
+    footer_about: 'عن بولسارا',
+    footer_careers: 'وظائف',
+    footer_contact: 'تواصل معنا',
+    footer_legal: 'القانونية',
+    footer_privacy: 'الخصوصية',
+    footer_terms: 'الشروط',
+    footer_copy: '© 2026 بولسارا. من الطلاب، للطلاب.',
     
     // General
     gen_verified: 'موثق',

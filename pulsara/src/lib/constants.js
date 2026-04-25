@@ -1,16 +1,16 @@
 /* ─── COLORS ─────────────────────────────────────── */
-export const LIME = '#d4ff3a';
-export const EXAM_C = '#ff4d3a';
-export const ASGN_C = '#4f9fff';
+export const LIME = '#1a1a1a';
+export const EXAM_C = '#dc3228';
+export const ASGN_C = '#3b7dd8';
 export const ADMIN_PASS = process.env.NEXT_PUBLIC_ADMIN_PASS || 'admin2026';
 export const CLASSROOM_CODE = (process.env.NEXT_PUBLIC_CLASSROOM_CODE || 'HNU-CS-UNI').toUpperCase();
 
 /* ─── TYPE CONFIG ────────────────────────────────── */
 export const TYPE_CFG = {
-  EXAM:       { label: 'EXAM',  color: EXAM_C, bg: 'rgba(255,79,79,.13)' },
-  QUIZ:       { label: 'QUIZ',  color: LIME,   bg: 'rgba(212,255,58,.13)' },
-  ASSIGNMENT: { label: 'ASGN',  color: ASGN_C, bg: 'rgba(79,159,255,.13)' },
-  OTHER:      { label: 'OTHER', color: '#aaa',  bg: 'rgba(170,170,170,.1)' },
+  EXAM:       { label: 'EXAM',  color: EXAM_C, bg: 'rgba(220,50,40,.1)' },
+  QUIZ:       { label: 'QUIZ',  color: '#2d8a6e',   bg: 'rgba(45,138,110,.1)' },
+  ASSIGNMENT: { label: 'ASGN',  color: ASGN_C, bg: 'rgba(59,125,216,.1)' },
+  OTHER:      { label: 'OTHER', color: '#888',  bg: 'rgba(136,136,136,.08)' },
 };
 
 /* ─── CODENAME SUGGESTIONS ───────────────────────── */
@@ -22,7 +22,7 @@ export const SUGGESTIONS = [
 /* ─── FORUM ──────────────────────────────────────── */
 export const FORUM_TAGS = ['STUDY', 'GROUP', 'EXAM', 'GRADES', 'ISSUE', 'GENERAL'];
 export const TAG_COLORS = {
-  STUDY: LIME,
+  STUDY: '#2d8a6e',
   GROUP: ASGN_C,
   EXAM: EXAM_C,
   GRADES: '#f0a500',
@@ -134,11 +134,11 @@ export const INP = {
   padding: '10px 13px', color: 'var(--text)',
   fontFamily: 'var(--sans)', fontSize: 13,
   outline: 'none', transition: 'border-color .2s',
-  colorScheme: 'dark',
+  colorScheme: 'light',
 };
 
 export const LIME_BTN = {
-  background: LIME, color: '#000', border: 'none',
+  background: '#1a1a1a', color: '#f0ebe1', border: 'none',
   borderRadius: 8, padding: '11px 20px',
   fontFamily: 'var(--mono)', fontSize: 11,
   fontWeight: 700, letterSpacing: '.08em',

@@ -1,4 +1,5 @@
 import { Instrument_Serif, JetBrains_Mono, Geist } from 'next/font/google';
+import { Analytics } from '@vercel/analytics/next';
 import './globals.css';
 
 const instrumentSerif = Instrument_Serif({
@@ -34,6 +35,7 @@ export default function RootLayout({ children }) {
     <html lang="en" className={`${instrumentSerif.variable} ${jetbrainsMono.variable} ${geist.variable}`}>
       <body>
         {children}
+        <Analytics />
       </body>
     </html>
   );

@@ -38,8 +38,8 @@ export default function SignupModal({ onComplete }) {
   }
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.88)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(8px)', animation: 'fadeIn .2s ease' }}>
-      <div style={{ background: 'var(--s1)', border: '1px solid var(--border)', borderRadius: 16, padding: '34px 30px', width: '100%', maxWidth: 400, animation: 'popIn .3s ease', position: 'relative' }}>
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(26,23,20,.75)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(8px)', animation: 'fadeIn .2s ease' }}>
+      <div style={{ background: '#fff', border: '1px solid var(--border)', borderRadius: 16, padding: '34px 30px', width: '100%', maxWidth: 400, animation: 'popIn .3s ease', position: 'relative', boxShadow: '0 20px 60px rgba(0,0,0,.12)' }}>
         {/* Logo */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 26 }}>
           <span style={{ fontFamily: 'var(--serif)', fontSize: 19 }}>Pulsara</span>
@@ -110,9 +110,9 @@ export default function SignupModal({ onComplete }) {
                 {suggested.map(s => (
                   <button key={s} type="button" onClick={() => { setUsernameInput(s); setError(''); }} style={{
                     fontFamily: 'var(--mono)', fontSize: 10, padding: '4px 9px', borderRadius: 6, cursor: 'pointer',
-                    background: usernameInput === s ? 'rgba(212,255,58,.12)' : 'var(--s2)',
-                    border: `1px solid ${usernameInput === s ? LIME + '55' : 'var(--border)'}`,
-                    color: usernameInput === s ? LIME : 'var(--muted2)', transition: 'all .15s',
+                    background: usernameInput === s ? 'rgba(26,26,26,.08)' : 'var(--s2)',
+                    border: `1px solid ${usernameInput === s ? '#1a1a1a55' : 'var(--border)'}`,
+                    color: usernameInput === s ? '#1a1a1a' : 'var(--muted2)', transition: 'all .15s',
                   }}>@{s}</button>
                 ))}
               </div>

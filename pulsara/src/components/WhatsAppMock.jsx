@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
-import { LIME } from '@/lib/constants';
+
+const ACCENT = '#9b8fc2';
 
 const EN_MSGS = [
   { side: 'left',  name: 'Ahmed K.',  text: 'yo did anyone actually study lmaoooo 💀', time: '10:02' },
@@ -28,6 +29,8 @@ const AR_MSGS = [
 
 export default function WhatsAppMock({ lang = 'en', t }) {
   const [revealed, setRevealed] = useState(false);
+  const [draftMsg, setDraftMsg] = useState('');
+  const [easterEgg, setEasterEgg] = useState(false);
   const isAr = lang === 'ar';
   const msgs = isAr ? AR_MSGS : EN_MSGS;
   const groupName = t ? t('landing_wa_group') : 'CS Faculty 2026 🎓';
@@ -37,21 +40,58 @@ export default function WhatsAppMock({ lang = 'en', t }) {
   const msgPlaceholder = t ? t('landing_wa_msg_input') : 'Message…';
   const annotation = t ? t('landing_wa_annotation') : 'exam info buried under 200+ messages';
 
+  function triggerEasterEgg() {
+    if (easterEgg) return;
+    setEasterEgg(true);
+    setTimeout(() => setEasterEgg(false), 5000);
+  }
+
   return (
     <div style={{ position: 'relative', width: '100%', maxWidth: 340, margin: '0 auto' }}>
-      <div style={{ background: '#1f1f1f', borderRadius: 20, overflow: 'hidden', border: '1px solid #333', boxShadow: '0 40px 80px rgba(0,0,0,.6)' }}>
+      <div style={{ background: '#fff', borderRadius: 20, overflow: 'hidden', border: '1px solid #d4cfc6', boxShadow: '0 20px 60px rgba(0,0,0,.1), 0 4px 16px rgba(0,0,0,.06)' }}>
         {/* Header */}
-        <div style={{ background: '#1a2f25', padding: '11px 14px', display: 'flex', alignItems: 'center', gap: 9, borderBottom: '1px solid #2a3f30' }}>
-          <div style={{ width: 34, height: 34, borderRadius: '50%', background: '#2d5a3d', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#5ddb8a', fontFamily: 'var(--mono)' }}>CS</div>
+        <div style={{ background: '#075e54', padding: '11px 14px', display: 'flex', alignItems: 'center', gap: 9, borderBottom: '1px solid #064d44', position: 'relative', overflow: 'hidden' }}>
+          <div style={{ width: 34, height: 34, borderRadius: '50%', background: '#128c7e', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#fff', fontFamily: 'var(--mono)' }}>CS</div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 12, fontWeight: 600, color: '#e9e9e9' }}>{groupName}</div>
-            <div style={{ fontSize: 10, color: '#6db87e' }}>{membersLabel}</div>
+            <div style={{ fontSize: 12, fontWeight: 600, color: '#fff' }}>{groupName}</div>
+            <div style={{ fontSize: 10, color: '#b0d9d1' }}>{membersLabel}</div>
           </div>
-          <div style={{ color: '#6db87e', fontSize: 13 }}>&#8942;</div>
+          <div
+            onClick={triggerEasterEgg}
+            style={{ color: '#b0d9d1', fontSize: 13, cursor: 'pointer', padding: '4px 2px', userSelect: 'none' }}
+          >&#8942;</div>
+
+          {/* Easter egg — cat chases rat across the header bar */}
+          {easterEgg && (
+            <>
+              {/* Rat runs first */}
+              <span style={{
+                position: 'absolute',
+                fontSize: 14,
+                bottom: 2,
+                left: -20,
+                animation: 'ratRun 2.5s ease-in forwards',
+                zIndex: 5,
+                transform: 'scaleX(-1)',
+              }}>🐭</span>
+              {/* Cat follows */}
+              <span style={{
+                position: 'absolute',
+                fontSize: 16,
+                bottom: 1,
+                left: -30,
+                animation: 'catChase 3s ease-in forwards',
+                animationDelay: '0.4s',
+                zIndex: 4,
+                opacity: 0,
+                transform: 'scaleX(-1)',
+              }}>🐱</span>
+            </>
+          )}
         </div>
 
         {/* Messages */}
-        <div style={{ background: '#0d1f18', backgroundImage: 'radial-gradient(circle at 1px 1px,#1a2f1e 1px,transparent 0)', backgroundSize: '24px 24px', height: 340, overflowY: 'auto', padding: '10px', display: 'flex', flexDirection: 'column', gap: 3 }}>
+        <div style={{ background: '#ece5dd', backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cpath d=\'M30 5 L35 15 L25 15Z\' fill=\'%23d9d2c7\' opacity=\'0.3\'/%3E%3C/svg%3E")', height: 340, overflowY: 'auto', padding: '10px', display: 'flex', flexDirection: 'column', gap: 3 }}>
           {msgs.map((msg, i) => {
             const right = msg.side === 'right';
 
@@ -60,38 +100,38 @@ export default function WhatsAppMock({ lang = 'en', t }) {
                 <div
                   onClick={() => setRevealed(r => !r)}
                   style={{
-                    maxWidth: '78%', background: revealed ? '#0d2d1a' : '#1a2a1a',
+                    maxWidth: '78%', background: revealed ? '#dcf8c6' : '#fff',
                     borderRadius: isAr ? '12px 2px 12px 12px' : '2px 12px 12px 12px', padding: '8px 10px',
-                    border: `1.5px solid ${revealed ? LIME : 'rgba(212,255,58,.25)'}`,
-                    cursor: 'pointer', boxShadow: revealed ? '0 0 16px rgba(212,255,58,.2)' : 'none',
+                    border: `1.5px solid ${revealed ? ACCENT : 'rgba(155,143,194,.35)'}`,
+                    cursor: 'pointer', boxShadow: revealed ? `0 0 12px rgba(155,143,194,.2)` : '0 1px 2px rgba(0,0,0,.08)',
                     transition: 'all .3s', textAlign: isAr ? 'right' : 'left',
                   }}
                 >
-                  <div style={{ fontSize: 10, fontWeight: 700, color: '#5ddb8a', marginBottom: 3 }}>{msg.name}</div>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: '#075e54', marginBottom: 3 }}>{msg.name}</div>
                   {revealed ? (
                     <div>
-                      <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: LIME, fontWeight: 700, marginBottom: 4 }}>{alertLabel}</div>
-                      <div style={{ fontSize: 12, color: '#d4e8d4', lineHeight: 1.5 }}>{msg.realText}</div>
+                      <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: ACCENT, fontWeight: 700, marginBottom: 4 }}>{alertLabel}</div>
+                      <div style={{ fontSize: 12, color: '#303030', lineHeight: 1.5 }}>{msg.realText}</div>
                     </div>
                   ) : (
                     <div>
-                      <div style={{ fontSize: 12, color: '#c8e6c9', marginBottom: 4 }}>{msg.text}</div>
-                      <div style={{ fontFamily: 'var(--mono)', fontSize: 9, padding: '2px 6px', borderRadius: 3, background: 'rgba(212,255,58,.08)', color: LIME, border: '1px solid rgba(212,255,58,.2)', display: 'inline-block', animation: 'spotlight 2.5s ease-in-out infinite' }}>
+                      <div style={{ fontSize: 12, color: '#303030', marginBottom: 4 }}>{msg.text}</div>
+                      <div style={{ fontFamily: 'var(--mono)', fontSize: 9, padding: '2px 6px', borderRadius: 3, background: 'rgba(220,50,40,.08)', color: '#dc3228', border: '1px solid rgba(220,50,40,.2)', display: 'inline-block', animation: 'spotlight 2.5s ease-in-out infinite' }}>
                         {tapLabel}
                       </div>
                     </div>
                   )}
-                  <div style={{ fontSize: 9, color: '#4a7a4e', textAlign: 'right', marginTop: 3 }}>{msg.time}</div>
+                  <div style={{ fontSize: 9, color: '#999', textAlign: 'right', marginTop: 3 }}>{msg.time}</div>
                 </div>
               </div>
             );
 
             return (
               <div key={i} style={{ display: 'flex', justifyContent: right ? 'flex-end' : 'flex-start', animation: `${right ? 'waRightIn' : 'waChatIn'} .25s ease ${i * 45}ms both` }}>
-                <div style={{ maxWidth: '75%', background: right ? '#005c4b' : '#1f2e23', borderRadius: right ? '12px 2px 12px 12px' : '2px 12px 12px 12px', padding: '7px 10px', textAlign: isAr ? 'right' : 'left' }}>
-                  {!right && <div style={{ fontSize: 10, fontWeight: 700, color: '#5ddb8a', marginBottom: 2 }}>{msg.name}</div>}
-                  <div style={{ fontSize: 12, color: right ? '#d9fdd3' : '#c8e6c9', lineHeight: 1.45 }}>{msg.text}</div>
-                  <div style={{ fontSize: 9, color: right ? '#53b39c' : '#4a7a4e', textAlign: 'right', marginTop: 3 }}>{msg.time}{right && ' ✓✓'}</div>
+                <div style={{ maxWidth: '75%', background: right ? '#dcf8c6' : '#fff', borderRadius: right ? '12px 2px 12px 12px' : '2px 12px 12px 12px', padding: '7px 10px', textAlign: isAr ? 'right' : 'left', boxShadow: '0 1px 2px rgba(0,0,0,.06)' }}>
+                  {!right && <div style={{ fontSize: 10, fontWeight: 700, color: '#075e54', marginBottom: 2 }}>{msg.name}</div>}
+                  <div style={{ fontSize: 12, color: '#303030', lineHeight: 1.45 }}>{msg.text}</div>
+                  <div style={{ fontSize: 9, color: '#999', textAlign: 'right', marginTop: 3 }}>{msg.time}{right && ' ✓✓'}</div>
                 </div>
               </div>
             );
@@ -99,9 +139,15 @@ export default function WhatsAppMock({ lang = 'en', t }) {
         </div>
 
         {/* Input */}
-        <div style={{ background: '#1f2e23', padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 7, borderTop: '1px solid #2a3f2e' }}>
-          <div style={{ flex: 1, background: '#2d3d30', borderRadius: 20, padding: '7px 13px', fontSize: 11, color: '#6a8a6e' }}>{msgPlaceholder}</div>
-          <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#00a884', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13 }}>🎤</div>
+        <div style={{ background: '#f0f0f0', padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 7, borderTop: '1px solid #ddd' }}>
+          <input
+            type="text"
+            value={draftMsg}
+            onChange={e => setDraftMsg(e.target.value)}
+            placeholder={msgPlaceholder}
+            style={{ flex: 1, background: '#fff', borderRadius: 20, padding: '7px 13px', fontSize: 11, color: '#303030', border: '1px solid #e0e0e0', outline: 'none', fontFamily: 'var(--sans)' }}
+          />
+          <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#00a884', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13 }}>✏️</div>
         </div>
       </div>
 
@@ -111,10 +157,27 @@ export default function WhatsAppMock({ lang = 'en', t }) {
         ...(isAr ? { left: -105 } : { right: -100 }),
         transform: 'translateY(-50%)', width: 92,
       }}>
-        <div style={{ fontFamily: 'var(--mono)', fontSize: 9, color: LIME, letterSpacing: '.05em', lineHeight: 1.6, textAlign: isAr ? 'right' : 'left' }}>
+        <div style={{ fontFamily: 'var(--mono)', fontSize: 9, color: '#1a1a1a', letterSpacing: '.05em', lineHeight: 1.6, textAlign: isAr ? 'right' : 'left' }}>
           {annotation}
         </div>
       </div>
+
+      {/* Easter egg animation keyframes */}
+      <style>{`
+        @keyframes ratRun {
+          0% { left: -20px; opacity: 1; }
+          70% { left: calc(100% + 10px); opacity: 1; }
+          85% { left: calc(100% + 10px); opacity: 1; transform: scaleX(-1) translateY(0); }
+          100% { left: calc(100% + 10px); opacity: 0; transform: scaleX(-1) translateY(8px); }
+        }
+        @keyframes catChase {
+          0% { left: -30px; opacity: 1; }
+          65% { left: calc(100% - 30px); opacity: 1; }
+          75% { left: calc(100% - 30px); opacity: 1; transform: scaleX(-1); }
+          80% { left: calc(100% + 10px); opacity: 1; transform: scaleX(-1); }
+          100% { left: calc(100% + 10px); opacity: 0; transform: scaleX(-1) translateY(8px); }
+        }
+      `}</style>
     </div>
   );
 }
